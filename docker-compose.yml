@@ -1,0 +1,44 @@
+services:
+  # Database used by Odoo (Odoo manages this one itself)
+  odoo-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: ${ODOO_DB_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # The Odoo ERP (community edition)
+  odoo:
+    image: odoo:18
+    depends_on:
+      - odoo-db
+    ports:
+      - "8069:8069"
+    environment:
+      HOST: odoo-db
+      USER: odoo
+      PASSWORD: ${ODOO_DB_PASSWORD}
+    volumes:
+      - odoo-data:/var/lib/odoo
+    restart: unless-stopped
+
+  # OrderDesk's own database (with pgvector for later steps)
+  app-db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: orderdesk
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD}
+      POSTGRES_DB: orderdesk
+    ports:
+      - "5434:5432"
+    volumes:
+      - app-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  odoo-db-data:
+  odoo-data:
+  app-db-data:
