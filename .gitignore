@@ -144,9 +144,9 @@ mnesia/
 rabbitmq/
 rabbitmq-data/
 
+tests/
 # ActiveMQ
 activemq-data/
-tests/
 # SageMath parsed files
 *.sage.py
 data/
