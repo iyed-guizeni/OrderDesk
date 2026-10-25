@@ -26,7 +26,7 @@ def apply_migrations(conn: psycopg.Connection, folder: Path = MIGRATIONS_DIR) ->
                 conn.execute(path.read_text(encoding="utf-8"))
                 conn.execute("INSERT INTO schema_migrations (version) VALUES (%s)", (path.stem,))
             applied_now.append(path.name)
-    finally:
+    finally:#clean up that always run
         conn.execute("SELECT pg_advisory_unlock(%s)", (_MIGRATION_LOCK_ID,))
     return applied_now
 
