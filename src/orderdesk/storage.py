@@ -37,7 +37,7 @@ class LocalStorage:
         # Write to a temporary file, then rename: a crash never leaves a half-written file.
         with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as tmp:
             tmp.write(data)
-            tmp_name = tmp.name
+            tmp_name = tmp.name 
         os.replace(tmp_name, path)
         return key
 
