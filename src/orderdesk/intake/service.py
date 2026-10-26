@@ -12,6 +12,7 @@ import psycopg
 from orderdesk.domain.models import ParsedEmail
 from orderdesk.intake.parser import EmailParseError, parse_email
 from orderdesk.storage import Storage
+from orderdesk.jobs.queue import enqueue
 
 Status = Literal["new", "duplicate", "rejected"]
 
@@ -44,6 +45,8 @@ def ingest_email(conn: psycopg.Connection, storage: Storage, tenant_id: int, raw
             existing_id = _find_email_id(conn, tenant_id, email.message_id)
             return IngestResult(status="duplicate", email_id=existing_id, message_id=email.message_id)
         _insert_attachments(conn, tenant_id, email_id, email, attachment_keys)
+        #create a job
+        enqueue(conn, tenant_id, email_id)
 
     return IngestResult(status="new", email_id=email_id, message_id=email.message_id)
 
