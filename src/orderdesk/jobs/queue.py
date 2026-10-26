@@ -1,3 +1,12 @@
+"""Add, claim (FOR UPDATE SKIP LOCKED) and finish jobs.
+
+A job may run more than once (for example after a crash), so job handlers must be safe to repeat.
+
+Fairness between companies:
+- the company served the longest time ago goes first (its oldest available job);
+- each company has at most `max_running` jobs running at the same time.
+Failed jobs wait longer before each retry (backoff), using the `available_at` column.
+"""
 
 from dataclasses import dataclass
 from datetime import timedelta
@@ -5,6 +14,11 @@ from datetime import timedelta
 import psycopg
 
 PROCESS_EMAIL = "process_email"
+
+DEFAULT_STALE_AFTER = timedelta(minutes=10)   # a running job older than this is considered abandoned
+DEFAULT_MAX_RUNNING_PER_TENANT = 2            # at most 2 jobs of one company running at once
+DEFAULT_MAX_ATTEMPTS = 3
+RETRY_DELAYS = (timedelta(seconds=30), timedelta(minutes=2), timedelta(minutes=10))
 
 
 @dataclass(frozen=True)
@@ -31,43 +45,52 @@ def enqueue(conn: psycopg.Connection, tenant_id: int, email_id: int, kind: str =
 def claim(
     conn: psycopg.Connection,
     worker_name: str,
-    tenant_id: int | None = None,
-    stale_after: timedelta = timedelta(minutes=10),
+    tenant_ids: list[int] | None = None,
+    stale_after: timedelta = DEFAULT_STALE_AFTER,
+    max_running: int = DEFAULT_MAX_RUNNING_PER_TENANT,
 ) -> Job | None:
-    """Take the oldest available job, or return None if there is nothing to do.
+    """Take the next job, fairly across companies. Returns None if there is nothing to do right now.
 
-    Available = pending, or running for longer than `stale_after` (its worker probably crashed).
-    SKIP LOCKED: if another worker is taking a job at this very moment, skip it and take the next one.
-    So each job is given to exactly one worker.
-    tenant_id: only take jobs of this company (None = any company).
+    A job can be taken if it is:
+      - pending and its retry delay is over (available_at <= now), or
+      - running for longer than `stale_after` (its worker probably crashed).
+    Order: the company served the longest time ago (or never) first, then its oldest job.
+    A company that already has `max_running` live jobs running is skipped until one finishes.
+    SKIP LOCKED: if another worker is taking a job at this very moment, skip it -> each job goes to one worker.
+    tenant_ids: only take jobs of these companies (None = any company, the normal case).
     """
     row = conn.execute(
         """
         UPDATE jobs
-        SET status = 'running', locked_by = %(worker)s, locked_at = now(), attempts = attempts + 1
+        SET status = 'running', locked_by = %(worker)s, locked_at = now(), claimed_at = now(),
+            attempts = attempts + 1
         WHERE id = (
             SELECT j.id
             FROM jobs j
-            JOIN (
-                -- number each company's available jobs: 1st, 2nd, 3rd...
-                SELECT id, row_number() OVER (PARTITION BY tenant_id ORDER BY id) AS turn
+            LEFT JOIN (
+                -- when each company was last served (looking at the last day is enough)
+                SELECT tenant_id, max(claimed_at) AS last_served
                 FROM jobs
-                WHERE (status = 'pending' AND available_at <= now())                 -- ready (backoff respected)
-                OR (status = 'running' AND locked_at < now() - %(stale)s)          -- abandoned by a crashed worker
-            ) c ON c.id = j.id
-            WHERE (                                                                   -- per-company limit
+                WHERE claimed_at > now() - interval '1 day'
+                GROUP BY tenant_id
+            ) s ON s.tenant_id = j.tenant_id
+            WHERE ((j.status = 'pending' AND j.available_at <= now())
+                   OR (j.status = 'running' AND j.locked_at < now() - %(stale)s))
+              AND (%(tenants)s::int[] IS NULL OR j.tenant_id = ANY(%(tenants)s))
+              AND (
+                -- per-company limit: count only LIVE running jobs (not abandoned ones)
                 SELECT count(*) FROM jobs r
                 WHERE r.tenant_id = j.tenant_id
-                AND r.status = 'running'
-                AND r.locked_at >= now() - %(stale)s                                -- only LIVE running jobs count
-            ) < %(max_running)s
-            ORDER BY c.turn, j.id                                                     -- companies take turns
+                  AND r.status = 'running'
+                  AND r.locked_at >= now() - %(stale)s
+              ) < %(max_running)s
+            ORDER BY s.last_served NULLS FIRST, j.id
             LIMIT 1
             FOR UPDATE OF j SKIP LOCKED
         )
-        RETURNING id, tenant_id, email_id, kind, attempts;
+        RETURNING id, tenant_id, email_id, kind, attempts
         """,
-        {"worker": worker_name, "stale": stale_after, "tenant": tenant_id},
+        {"worker": worker_name, "stale": stale_after, "tenants": tenant_ids, "max_running": max_running},
     ).fetchone()
     return Job(*row) if row else None
 
@@ -83,19 +106,30 @@ def mark_done(conn: psycopg.Connection, job_id: int) -> None:
     )
 
 
-def mark_failed(conn: psycopg.Connection, job: Job, error: str, max_attempts: int = 3) -> str:
-    """Record a failure. The job goes back to 'pending' for a retry, or to 'failed' after max_attempts.
+def retry_delay(attempts: int) -> timedelta:
+    """How long to wait before the next try, after `attempts` failed attempts (30 s, 2 min, 10 min...)."""
+    return RETRY_DELAYS[min(attempts, len(RETRY_DELAYS)) - 1]
+
+
+def mark_failed(
+    conn: psycopg.Connection, job: Job, error: str, max_attempts: int = DEFAULT_MAX_ATTEMPTS
+) -> str:
+    """Record a failure. The job waits for its retry delay, or becomes 'failed' after max_attempts.
 
     Returns the new status.
     """
-    new_status = "failed" if job.attempts >= max_attempts else "pending"
+    if job.attempts >= max_attempts:
+        new_status, delay = "failed", timedelta(0)
+    else:
+        new_status, delay = "pending", retry_delay(job.attempts)
     conn.execute(
         """
         UPDATE jobs
-        SET status = %s, last_error = %s, locked_by = NULL, locked_at = NULL,
-            finished_at = CASE WHEN %s = 'failed' THEN now() ELSE NULL END
-        WHERE id = %s
+        SET status = %(status)s, last_error = %(error)s, locked_by = NULL, locked_at = NULL,
+            available_at = now() + %(delay)s,
+            finished_at = CASE WHEN %(status)s = 'failed' THEN now() ELSE NULL END
+        WHERE id = %(id)s
         """,
-        (new_status, error[:2000], new_status, job.id),
+        {"status": new_status, "error": error[:2000], "delay": delay, "id": job.id},
     )
     return new_status

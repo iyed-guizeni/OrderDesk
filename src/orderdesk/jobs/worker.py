@@ -1,4 +1,5 @@
 
+
 import logging
 import os
 import socket
@@ -38,10 +39,10 @@ def run_one(
     conn: psycopg.Connection,
     worker_name: str,
     handlers: dict[str, Handler] = HANDLERS,
-    tenant_id: int | None = None,
+    tenant_ids: list[int] | None = None,
 ) -> bool:
     """Claim and run one job. Returns False if there was nothing to do."""
-    job = claim(conn, worker_name, tenant_id=tenant_id)
+    job = claim(conn, worker_name, tenant_ids=tenant_ids)
     if job is None:
         return False
     try:
@@ -73,13 +74,13 @@ def run_until_empty(
     conn: psycopg.Connection,
     worker_name: str,
     handlers: dict[str, Handler] = HANDLERS,
-    tenant_id: int | None = None,
+    tenant_ids: list[int] | None = None,
 ) -> int:
     """Process jobs until none is left. Returns how many were run. Handy for tests and demos.
 
-    A job that fails is retried until it reaches its maximum attempts, then left as 'failed'.
+    A failed job waits for its retry delay, so it may still be pending when this returns.
     """
     count = 0
-    while run_one(conn, worker_name, handlers, tenant_id):
+    while run_one(conn, worker_name, handlers, tenant_ids):
         count += 1
     return count
