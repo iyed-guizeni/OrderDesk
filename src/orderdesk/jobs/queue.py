@@ -46,14 +46,26 @@ def claim(
         UPDATE jobs
         SET status = 'running', locked_by = %(worker)s, locked_at = now(), attempts = attempts + 1
         WHERE id = (
-            SELECT id FROM jobs
-            WHERE (status = 'pending' OR (status = 'running' AND locked_at < now() - %(stale)s))
-              AND (%(tenant)s::int IS NULL OR tenant_id = %(tenant)s)
-            ORDER BY id
+            SELECT j.id
+            FROM jobs j
+            JOIN (
+                -- number each company's available jobs: 1st, 2nd, 3rd...
+                SELECT id, row_number() OVER (PARTITION BY tenant_id ORDER BY id) AS turn
+                FROM jobs
+                WHERE (status = 'pending' AND available_at <= now())                 -- ready (backoff respected)
+                OR (status = 'running' AND locked_at < now() - %(stale)s)          -- abandoned by a crashed worker
+            ) c ON c.id = j.id
+            WHERE (                                                                   -- per-company limit
+                SELECT count(*) FROM jobs r
+                WHERE r.tenant_id = j.tenant_id
+                AND r.status = 'running'
+                AND r.locked_at >= now() - %(stale)s                                -- only LIVE running jobs count
+            ) < %(max_running)s
+            ORDER BY c.turn, j.id                                                     -- companies take turns
             LIMIT 1
-            FOR UPDATE SKIP LOCKED
+            FOR UPDATE OF j SKIP LOCKED
         )
-        RETURNING id, tenant_id, email_id, kind, attempts
+        RETURNING id, tenant_id, email_id, kind, attempts;
         """,
         {"worker": worker_name, "stale": stale_after, "tenant": tenant_id},
     ).fetchone()
