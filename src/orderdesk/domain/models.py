@@ -31,3 +31,4 @@ class ParsedEmail(BaseModel):
     attachments: list[ParsedAttachment]
     raw_sha256: str                     # fingerprint of the whole original .eml
 
+
