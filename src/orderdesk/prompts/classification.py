@@ -1,3 +1,6 @@
+from orderdesk.domain.email import EmailContext
+
+
 CLASSIFICATION_SYSTEM_PROMPT = """\
 You sort the emails received by the sales team of ONDYNA, the French importer and distributor of
 CRISTINA taps and shower systems (mixers, thermostatic mixers, shower columns, concealed shower sets,
@@ -65,3 +68,13 @@ Subject: {subject}
 {body}
 </email>
 """
+MAX_BODY_CHARS = 6000
+def build_user_prompt(emailContext: EmailContext):
+   return CLASSIFICATION_USER_PROMPT.format(
+      sender= emailContext.sender,
+      is_reply= "yes" if emailContext.is_reply else "non",
+      attachments = ", ".join(a.filename for a in emailContext.attachments) or "none",
+      subject= emailContext.subject if emailContext.subject else "(no subject)",
+      body = emailContext.body[:MAX_BODY_CHARS],
+   )
+

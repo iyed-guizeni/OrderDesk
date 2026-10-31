@@ -1,0 +1,33 @@
+Message-ID: <20261021091402.4f7a@btp-martin.fr>
+Date: Wed, 21 Oct 2026 09:14:02 +0200
+From: Karim Benali <karim@btp-martin.fr>
+Reply-To: achats@btp-martin.fr
+To: orders@dupont-fixations.fr
+Cc: compta@btp-martin.fr
+Subject: Commande BM-2291 - livraison jeudi
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="orderdesk-sample-boundary"
+
+--orderdesk-sample-boundary
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Bonjour,
+
+Merci de nous livrer jeudi sur le chantier de Villeurbanne la commande ci-joi=
+nte.
+
+Karim Benali
+BTP Martin
+
+--orderdesk-sample-boundary
+Content-Type: text/csv
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="BC_BM-2291.csv"
+MIME-Version: 1.0
+
+cmVmX2NsaWVudDtkZXNpZ25hdGlvbjtxdWFudGl0ZTt1bml0ZQpWSE04NDBaO3ZpcyB0ZXRlIGhl
+eGFnb25hbGUgTTh4NDAgemluZ3VlZTs1MDA7cGllY2UKO3JvbmRlbGxlcyBNODsyMDA7cGllY2UK
+O2NoZXZpbGxlcyBjb21tZSBsYSBkZXJuaWVyZSBmb2lzOzEwO2JvaXRlCg==
+
+--orderdesk-sample-boundary--

@@ -1,12 +1,10 @@
-from orderdesk.domain.models import ParsedEmail
 from typing import TypedDict
-from orderdesk.jobs.queue import Job
-from pydantic import BaseModel, ConfigDict
-from orderdesk.domain.classification import EmailContext
-    
+from orderdesk.domain.email import EmailContext
+from orderdesk.domain.classification import EmailClassification
 
 class WorkflowState(TypedDict):
     email: EmailContext
+    classification: EmailClassification
     
     
     
