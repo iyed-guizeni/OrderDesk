@@ -15,7 +15,7 @@ def make_classify_node(llm: ChatLike, profile: str) -> Callable[[WorkflowState],
     or be a fake object with an invoke() method in tests."""
 
     def classify_email(state: WorkflowState) -> dict:
-        system_prompt = build_system_prompt(ONDYNA_PROFILE)
+        system_prompt = build_system_prompt(profile)
         user_prompt = build_user_prompt(state["email"])
         output = llm.invoke(
             [
