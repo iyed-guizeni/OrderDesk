@@ -54,7 +54,7 @@ CLASSIFICATION_USER_PROMPT = """\
 Classify this email.
 
 <context>
-From: {sender}
+
 Reply to an earlier email: {is_reply}
 Attachments: {attachments}
 </context>
@@ -68,7 +68,6 @@ Subject: {subject}
 MAX_BODY_CHARS = 6000
 def build_user_prompt(emailContext: EmailContext)->str:
    return CLASSIFICATION_USER_PROMPT.format(
-      sender= emailContext.sender,
       is_reply= "yes" if emailContext.is_reply else "no",
       attachments = ", ".join(a.filename for a in emailContext.attachments) or "none",
       subject= emailContext.subject if emailContext.subject else "(no subject)",

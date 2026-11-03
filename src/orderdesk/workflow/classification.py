@@ -7,7 +7,7 @@ from langchain_core.runnables import Runnable
 from orderdesk.domain.classification import EmailClassification
 from orderdesk.prompts.classification import  build_user_prompt, build_system_prompt
 from orderdesk.workflow.state import WorkflowState
-from orderdesk.profiles.default import ONDYNA_PROFILE
+from orderdesk.profiles.ondyna import ONDYNA_PROFILE
 from orderdesk.llm.client import ChatLike
 
 def make_classify_node(llm: ChatLike, profile: str) -> Callable[[WorkflowState], dict]:
@@ -23,7 +23,7 @@ def make_classify_node(llm: ChatLike, profile: str) -> Callable[[WorkflowState],
                 HumanMessage(content=user_prompt),
             ]
         )
-        print(output)
+        #print(output)
         if not isinstance(output, EmailClassification):
             raise ValueError(f"the LLM gave no valid EmailClassification (got {output!r})")
         return {"classification": output}
