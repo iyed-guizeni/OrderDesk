@@ -8,9 +8,9 @@ from orderdesk.domain.classification import EmailClassification
 from orderdesk.prompts.classification import  build_user_prompt, build_system_prompt
 from orderdesk.workflow.state import WorkflowState
 from orderdesk.profiles.default import ONDYNA_PROFILE
+from orderdesk.llm.client import ChatLike
 
-
-def make_classify_node(llm: Runnable) -> Callable[[WorkflowState], dict]:
+def make_classify_node(llm: ChatLike, profile: str) -> Callable[[WorkflowState], dict]:
     """Build the node. `llm` must already return EmailClassification (with_structured_output),
     or be a fake object with an invoke() method in tests."""
 
