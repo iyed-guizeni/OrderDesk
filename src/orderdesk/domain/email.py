@@ -24,6 +24,7 @@ class EmailContext(BaseModel):
     body: str
     is_reply: bool
     attachments: list[AttachmentRef] = []
+    attachment_excerpt: str | None = None #only when the mail body is (almost) empty: for classification context enrichment
 
 
 

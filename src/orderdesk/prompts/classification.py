@@ -64,6 +64,7 @@ Subject: {subject}
 
 {body}
 </email>
+{attachment_block}
 """
 MAX_BODY_CHARS = 6000
 def build_user_prompt(emailContext: EmailContext)->str:
@@ -72,6 +73,9 @@ def build_user_prompt(emailContext: EmailContext)->str:
       attachments = ", ".join(a.filename for a in emailContext.attachments) or "none",
       subject= emailContext.subject if emailContext.subject else "(no subject)",
       body = emailContext.body[:MAX_BODY_CHARS],
+      attachment_block=(
+            f"\n<attachment>\n{emailContext.attachment_excerpt}\n</attachment>\n" if emailContext.attachment_excerpt else ""
+        ),
    )
    
 def build_system_prompt(profile: str)->str:
