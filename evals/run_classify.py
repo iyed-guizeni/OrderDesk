@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-
+from langsmith import traceable
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -15,11 +15,17 @@ from orderdesk.domain.email import EmailContext
 from orderdesk.profiles.ondyna import ONDYNA_PROFILE
 from orderdesk.prompts.classification import build_system_prompt
 from orderdesk.workflow.classification import make_classify_node
+from langchain_openrouter import ChatOpenRouter
+
+
 
 DATASET = Path(__file__).parent / "classify" / "ondyna.jsonl"
 RESULTS_DIR = Path(__file__).parent / "results" / "classify"
-MODEL = "gemini-3.5-flash-lite"
-PAUSE_SECONDS = 4  # free tiers limit requests per minute
+#MODEL = "gemini-3.5-flash-lite"
+PAUSE_SECONDS = 3  # free tiers limit requests per minute
+#MODEL = "nvidia/nemotron-3.5-lightning:free"
+#MODEL="gemini-3.8-flash"#high demande
+MODEL="gemini-3.6-flash"
 
 
 def run_case(classify, case: dict) -> dict:
@@ -65,9 +71,11 @@ def metrics(rows: list[dict]) -> dict:
         "mistakes": [row["id"] for row in rows if not row["correct"]],
     }
 
+load_dotenv()
 
+@traceable
 def main() -> None:
-    load_dotenv()
+
     system_prompt = build_system_prompt(ONDYNA_PROFILE)
     llm = ChatGoogleGenerativeAI(model=MODEL, temperature=0).with_structured_output(EmailClassification)
     classify = make_classify_node(llm, ONDYNA_PROFILE)
@@ -92,7 +100,8 @@ def main() -> None:
     }
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    run_file = RESULTS_DIR / f"{datetime.now():%Y-%m-%d_%H%M%S}_{MODEL}.json"
+    safe_model = MODEL.replace("/", "_").replace(":", "_")
+    run_file = RESULTS_DIR / f"{datetime.now():%Y-%m-%d_%H%M%S}_{safe_model}.json"    
     run_file.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     summary = {key: result[key] for key in ("date", "model", "dataset", "prompt_sha")} | {
         key: result["metrics"][key] for key in ("accuracy", "correct", "total", "per_label", "errors")
