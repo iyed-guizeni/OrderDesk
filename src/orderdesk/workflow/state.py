@@ -1,10 +1,11 @@
 from typing import TypedDict
+from pydantic import BaseModel
 from orderdesk.domain.email import EmailContext
 from orderdesk.domain.classification import EmailClassification
 
-class WorkflowState(TypedDict):
+class WorkflowState(BaseModel):
     email: EmailContext
-    classification: EmailClassification
+    classification: EmailClassification | None = None
     
     
     

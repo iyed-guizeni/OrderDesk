@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "orderdesk": "./src/orderdesk/workflow/graph.py:graph"
+  },
+  "env": ".env"
+}

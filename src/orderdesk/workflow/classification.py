@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable
 
 from orderdesk.domain.classification import EmailClassification
+from orderdesk.domain.email import EmailContext
 from orderdesk.prompts.classification import  build_user_prompt, build_system_prompt
 from orderdesk.workflow.state import WorkflowState
 from orderdesk.profiles.ondyna import ONDYNA_PROFILE
@@ -16,7 +17,7 @@ def make_classify_node(llm: ChatLike, profile: str) -> Callable[[WorkflowState],
 
     def classify_email(state: WorkflowState) -> dict:
         system_prompt = build_system_prompt(profile)
-        user_prompt = build_user_prompt(state["email"])
+        user_prompt = build_user_prompt(state.email)
         output = llm.invoke(
             [
                 SystemMessage(content=system_prompt),
