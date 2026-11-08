@@ -9,14 +9,16 @@ from pathlib import Path
 from langsmith import traceable
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
+import os
 from orderdesk.domain.classification import EmailClassification
 from orderdesk.domain.email import EmailContext
 from orderdesk.profiles.ondyna import ONDYNA_PROFILE
 from orderdesk.prompts.classification import build_system_prompt
 from orderdesk.workflow.classification import make_classify_node
 from langchain_openrouter import ChatOpenRouter
-
+from orderdesk.workflow.state import WorkflowState
+from langchain_openai import ChatOpenAI
 
 
 DATASET = Path(__file__).parent / "classify" / "ondyna.jsonl"
@@ -44,9 +46,9 @@ def run_case(classify, case: dict) -> dict:
     }
     start = time.perf_counter()
     try:
-        answer = classify({"email": EmailContext.model_validate(case["email"])})["classification"]
+        answer = classify(WorkflowState(email=EmailContext.model_validate(case["email"])))["classification"]        
         row.update(label=answer.label, also_contains=list(answer.also_contains),
-                   confidence=answer.confidence, evidence=answer.evidence)
+        confidence=answer.confidence, evidence=answer.evidence)
     except Exception as error:  # rate limit, invalid answer...: recorded, the run continues
         row["error"] = f"{type(error).__name__}: {' '.join(str(error).split())}"
     row["seconds"] = round(time.perf_counter() - start, 2)
@@ -77,7 +79,24 @@ load_dotenv()
 def main() -> None:
 
     system_prompt = build_system_prompt(ONDYNA_PROFILE)
-    llm = ChatGoogleGenerativeAI(model=MODEL, temperature=0).with_structured_output(EmailClassification)
+    #llm = ChatGoogleGenerativeAI(model=MODEL, temperature=0).with_structured_output(EmailClassification)
+    import os
+
+    from langchain_openai import ChatOpenAI
+
+    #MODEL = "mistralai/mistral-large-4-1t-a52b"100% accuracy 
+    #MODEL = "openai/gpt-oss-20b"
+    #MODEL = "deepseek-ai/deepseek-v4.1-flash" take a lot of time
+    MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b" #speed and accurate
+
+    chat = ChatOpenAI(
+        model=MODEL,
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=os.environ["NVIDIA_API_KEY"],   
+        temperature=0,
+        )
+
+    llm = chat.with_structured_output(EmailClassification, method="function_calling")
     classify = make_classify_node(llm, ONDYNA_PROFILE)
     cases = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()]
 

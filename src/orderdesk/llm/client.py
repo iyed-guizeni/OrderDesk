@@ -143,6 +143,12 @@ def make_structured_llm(provider: str, model: str, schema: type[BaseModel]) -> C
         from langchain_groq import ChatGroq
 
         chat = ChatGroq(model=model, temperature=0, timeout=60, max_retries=0)
+    elif provider == "nvidia":
+        import os
+        from langchain_openai import ChatOpenAI
+
+        chat = ChatOpenAI(model=model, base_url="https://integrate.api.nvidia.com/v1",
+        api_key=os.environ["NVIDIA_API_KEY"], temperature=0, timeout=60, max_retries=0)
     else:
         raise ValueError(f"unknown provider {provider!r}")
     return chat.with_structured_output(schema, method="function_calling")
