@@ -6,7 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
-docs/
+
 # Distribution / packaging
 .Python
 build/
@@ -211,7 +211,7 @@ tempCodeRunnerFile.py
 
 # PyPI configuration file
 .pypirc
-
+docs/
 # Marimo
 marimo/_static/
 marimo/_lsp/

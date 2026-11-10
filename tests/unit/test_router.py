@@ -1,7 +1,7 @@
 from orderdesk.domain.classification import EmailClassification
-from orderdesk.domain.email import EmailContext
 from orderdesk.workflow.router import route_email
 from orderdesk.workflow.state import WorkflowState
+from tests.factories import make_email
 
 
 def make_state(**classification_changes: object) -> WorkflowState:
@@ -12,15 +12,7 @@ def make_state(**classification_changes: object) -> WorkflowState:
     }
     classification_data.update(classification_changes)
     classification = EmailClassification(**classification_data)
-    email = EmailContext(
-        tenant_id=1,
-        email_id=1,
-        sender="customer@example.com",
-        subject="Order",
-        body="Please send 10 units.",
-        is_reply=False,
-    )
-    return WorkflowState(email=email, classification=classification)
+    return WorkflowState(email=make_email(), classification=classification)
 
 
 def test_low_confidence_routes_to_triage() -> None:

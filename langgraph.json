@@ -3,7 +3,7 @@
     "."
   ],
   "graphs": {
-    "orderdesk": "./src/orderdesk/workflow/graph.py:graph"
+    "orderdesk": "./src/orderdesk/workflow/studio.py:make_graph"
   },
   "env": ".env"
 }

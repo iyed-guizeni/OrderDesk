@@ -4,25 +4,30 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from orderdesk.domain.classification import EmailClassification
 from orderdesk.domain.email import AttachmentRef, EmailContext
-from orderdesk.prompts.classification import CLASSIFICATION_SYSTEM_PROMPT, MAX_BODY_CHARS, build_user_prompt
+from orderdesk.prompts.classification import MAX_BODY_CHARS, build_system_prompt, build_user_prompt
 from orderdesk.workflow.classification import make_classify_node
+from orderdesk.workflow.state import WorkflowState
+from tests import factories
 from tests.fakes import FakeLLM
 
 STORAGE_KEY = "tenants/999/attachments/3b/3b7e0c"
 
 
+PROFILE = "ACME Robinetterie sells taps and shower systems."
+
+
 def make_email(**changes) -> EmailContext:
-    """A typical email; each test changes only what it is about."""
+    """The shared order email, with one attached PDF; each test changes only what it is about."""
+    attachment = AttachmentRef(filename="BC_4471.pdf", content_type="application/pdf", storage_key=STORAGE_KEY)
     fields = {
-        "tenant_id": 999,
-        "email_id": 7,
-        "sender": "showroom@bains-and-co.fr",
-        "subject": "Bon de commande 4471",
         "body": "Ci-joint notre bon de commande 4471 : 2 mitigeurs Profilo 3 sorties noir brossé.",
-        "is_reply": False,
-        "attachments": [AttachmentRef(filename="BC_4471.pdf", content_type="application/pdf", storage_key=STORAGE_KEY)],
+        "attachments": [attachment],
     }
-    return EmailContext(**{**fields, **changes})
+    return factories.make_email(**{**fields, **changes})
+
+
+def make_state(**changes) -> WorkflowState:
+    return WorkflowState(email=make_email(**changes))
 
 
 def make_answer(**changes) -> EmailClassification:
@@ -34,21 +39,21 @@ def make_answer(**changes) -> EmailClassification:
 
 def test_node_returns_only_the_classification() -> None:
     answer = make_answer()
-    node = make_classify_node(FakeLLM(answer))
+    node = make_classify_node(FakeLLM(answer), PROFILE)
 
-    update = node({"email": make_email()})
+    update = node(make_state())
 
     assert update == {"classification": answer}  
 
 
 def test_node_sends_system_prompt_then_the_email() -> None:
     llm = FakeLLM(make_answer())
-    node = make_classify_node(llm)
+    node = make_classify_node(llm, PROFILE)
 
-    node({"email": make_email()})
+    node(make_state())
 
     system, user = llm.last_messages
-    assert isinstance(system, SystemMessage) and system.content == CLASSIFICATION_SYSTEM_PROMPT
+    assert isinstance(system, SystemMessage) and system.content == build_system_prompt(PROFILE)
     assert isinstance(user, HumanMessage)
     assert "Subject: Bon de commande 4471" in user.content
     assert "2 mitigeurs Profilo" in user.content
@@ -57,23 +62,23 @@ def test_node_sends_system_prompt_then_the_email() -> None:
 def test_node_calls_the_llm_once() -> None:
     llm = FakeLLM(make_answer())
 
-    make_classify_node(llm)({"email": make_email()})
+    make_classify_node(llm, PROFILE)(make_state())
 
     assert len(llm.calls) == 1
 
 
 def test_node_fails_clearly_when_the_llm_gives_no_answer() -> None:
-    node = make_classify_node(FakeLLM(None))  # e.g. the model did not call the tool
+    node = make_classify_node(FakeLLM(None), PROFILE)  # e.g. the model did not call the tool
 
     with pytest.raises(ValueError, match="no valid EmailClassification"):
-        node({"email": make_email()})
+        node(make_state())
 
 
 def test_provider_errors_are_not_hidden() -> None:
-    node = make_classify_node(FakeLLM(TimeoutError("provider too slow")))
+    node = make_classify_node(FakeLLM(TimeoutError("provider too slow")), PROFILE)
 
     with pytest.raises(TimeoutError):  # the job queue will retry it later
-        node({"email": make_email()})
+        node(make_state())
 
 
 #  the user prompt 

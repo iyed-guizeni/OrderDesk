@@ -1,49 +1,32 @@
-from dotenv import load_dotenv
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
-from orderdesk.domain.classification import EmailClassification
-from orderdesk.llm.client import make_fallback_llm
-from orderdesk.profiles.ondyna import ONDYNA_PROFILE
+from orderdesk.llm.client import ChatLike
+from orderdesk.storage import Storage
+from orderdesk.workflow import after_sales, amendment, cancellation, other, quote_request, triage
 from orderdesk.workflow.classification import make_classify_node
+from orderdesk.workflow.new_order import make_extract_node
 from orderdesk.workflow.router import route_email
 from orderdesk.workflow.state import WorkflowState
-from orderdesk.workflow import (
-    after_sales,
-    amendment,
-    cancellation,
-    new_order,
-    other,
-    quote_request,
-    triage,
-)
-
-load_dotenv()
 
 
-provider_chain = [
-    ("nvidia", "nvidia/nemotron-3.5-lightning-30b-a3b"),
-    ("mistral", "mistralai/mistral-large-4-1t-a52b"),
-    ("gemini", "gemini-3.5-flash-lite"),
-]
-llm = make_fallback_llm(provider_chain, EmailClassification)
+def build_graph(classify_llm: ChatLike, extract_llm: ChatLike, profile: str, storage: Storage) -> CompiledStateGraph:
+    builder = StateGraph(WorkflowState)
+    builder.add_node("classification", make_classify_node(classify_llm, profile))
+    branch_nodes = {
+        "triage": triage.triage,
+        "new_order": make_extract_node(extract_llm, profile, storage),  # becomes a subgraph later
+        "amendment": amendment.amendment,
+        "cancellation": cancellation.cancellation,
+        "quote_request": quote_request.quote_request,
+        "after_sales": after_sales.after_sales,
+        "other": other.other,
+    }
+    for name, node in branch_nodes.items():
+        builder.add_node(name, node)
 
-
-builder = StateGraph(WorkflowState)
-builder.add_node("classification", make_classify_node(llm, ONDYNA_PROFILE))
-branch_nodes = {
-    "triage": triage.triage,
-    "new_order": new_order.new_order,
-    "amendment": amendment.amendment,
-    "cancellation": cancellation.cancellation,
-    "quote_request": quote_request.quote_request,
-    "after_sales": after_sales.after_sales,
-    "other": other.other,
-}
-for name, node in branch_nodes.items():
-    builder.add_node(name, node)
-
-builder.add_conditional_edges("classification", route_email, list(branch_nodes))
-builder.add_edge(START, "classification")
-for name in branch_nodes:
-    builder.add_edge(name, END)
-graph = builder.compile()
+    builder.add_edge(START, "classification")
+    builder.add_conditional_edges("classification", route_email, list(branch_nodes))
+    for name in branch_nodes:
+        builder.add_edge(name, END)
+    return builder.compile()

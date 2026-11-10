@@ -2,7 +2,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-
+from datetime import datetime
 
 
 
@@ -20,6 +20,7 @@ class EmailContext(BaseModel):
     tenant_id: int
     email_id: int
     sender: str
+    sent_at: datetime 
     subject: str
     body: str
     is_reply: bool

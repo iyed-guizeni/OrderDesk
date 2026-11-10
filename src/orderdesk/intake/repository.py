@@ -8,7 +8,7 @@ def load_email_context(conn: psycopg.Connection, tenant_id: int, email_id: int) 
     """What the workflow needs to know about one email. Attachment bytes stay in storage."""
     row = conn.execute(
         """
-        SELECT from_address, subject, body_text, in_reply_to, references_ids
+        SELECT from_address, subject, body_text, in_reply_to, references_ids, sent_at
         FROM emails
         WHERE tenant_id = %s AND id = %s
         """,
@@ -16,7 +16,7 @@ def load_email_context(conn: psycopg.Connection, tenant_id: int, email_id: int) 
     ).fetchone()
     if row is None:
         raise LookupError(f"email {email_id} not found for tenant {tenant_id}")
-    sender, subject, body_text, in_reply_to, references_ids = row
+    sender, subject, body_text, in_reply_to, references_ids, sent_at = row
 
     attachments = [
         AttachmentRef(filename=filename, content_type=content_type, storage_key=storage_key)
@@ -35,6 +35,7 @@ def load_email_context(conn: psycopg.Connection, tenant_id: int, email_id: int) 
         tenant_id=tenant_id,
         email_id=email_id,
         sender=sender,
+        sent_at=sent_at,
         subject=subject or "",
         body=body_text or "",
         is_reply=in_reply_to is not None or bool(references_ids),

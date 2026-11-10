@@ -1,37 +1,16 @@
 """Unit tests for reading attachments and the excerpt given to the classifier."""
 
-import io
-
 from orderdesk.documents.excerpt import MAX_EXCERPT_CHARS, add_attachment_excerpt
 from orderdesk.documents.text import extract_text
 from orderdesk.domain.email import AttachmentRef, EmailContext
 from orderdesk.prompts.classification import build_user_prompt
-
-
-class FakeStorage:
-    """Storage in memory: key -> bytes."""
-
-    def __init__(self, files: dict[str, bytes]) -> None:
-        self.files = files
-
-    def get(self, key: str) -> bytes:
-        return self.files[key]
-
-
-def make_pdf(text: str) -> bytes:
-    """A real one-page PDF with some text (reportlab is a dev dependency)."""
-    from reportlab.pdfgen import canvas
-
-    buffer = io.BytesIO()
-    pdf = canvas.Canvas(buffer)
-    pdf.drawString(72, 750, text)
-    pdf.save()
-    return buffer.getvalue()
+from tests import factories
+from tests.factories import make_pdf
+from tests.fakes import FakeStorage
 
 
 def make_email(body: str, attachments: list[AttachmentRef]) -> EmailContext:
-    return EmailContext(tenant_id=999, email_id=1, sender="a@b.example", subject="Commande", body=body,
-                        is_reply=False, attachments=attachments)
+    return factories.make_email(body=body, attachments=attachments)
 
 
 PDF_REF = AttachmentRef(filename="scan_0042.pdf", content_type="application/pdf", storage_key="k/pdf")

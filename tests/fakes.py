@@ -23,3 +23,17 @@ class FakeLLM:
         if not self.calls:
             raise AssertionError("FakeLLM was never called")
         return self.calls[-1]
+
+class FakeStorage:
+    """Storage in memory: key -> bytes. A missing key raises KeyError, like a missing file would fail."""
+
+    def __init__(self, files: dict[str, bytes] | None = None) -> None:
+        self.files = dict(files or {})
+
+    def put(self, tenant_id: int, kind: str, data: bytes) -> str:
+        key = f"tenants/{tenant_id}/{kind}/{len(self.files)}"
+        self.files[key] = data
+        return key
+
+    def get(self, key: str) -> bytes:
+        return self.files[key]
