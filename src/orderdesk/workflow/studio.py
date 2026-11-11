@@ -11,7 +11,7 @@ from orderdesk.storage import LocalStorage
 from orderdesk.workflow.graph import build_graph
 
 PROVIDER_CHAIN = [
-    ("nvidia", "nvidia/nemotron-3.5-lightning-30b-a3b"),
+    ("nvidia", "nvidia/nemotron-3.5-super-vl-120b-a12b"),
     ("nvidia", "mistralai/mistral-large-4-1t-a52b"),  
     ("gemini", "gemini-3.5-flash-lite"),  
 ]
