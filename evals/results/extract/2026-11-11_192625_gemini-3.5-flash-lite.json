@@ -1,0 +1,4350 @@
+{
+  "date": "2026-11-11T19:26:25",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "dataset": "ondyna.jsonl",
+  "prompt_sha": "b1d58437c4",
+  "bar": {
+    "critical_clean": 0.95,
+    "minor_fields": 0.85
+  },
+  "verdict": "FAIL",
+  "reasons": [
+    "critical-clean cases 93% < 95%"
+  ],
+  "metrics": {
+    "scored": 59,
+    "total": 60,
+    "api_errors": 1,
+    "invalid_answers": 3,
+    "critical_clean": 55,
+    "critical_clean_rate": 0.932,
+    "perfect": 53,
+    "minor_fields_rate": 0.941,
+    "invented_lines": 0,
+    "critical_clean_per_difficulty": {
+      "easy": "15/15",
+      "hard": "22/24",
+      "medium": "18/20"
+    },
+    "fields": {
+      "attachment_mentioned": "7/7",
+      "delivery_kind": "5/5",
+      "line.kind": "18/18",
+      "line.quantity": "85/85",
+      "line.unit": "22/23",
+      "line_found": "85/86",
+      "no_invented_line": "56/56",
+      "order_reference": "3/3",
+      "po_number": "16/16",
+      "requested_date": "5/6"
+    },
+    "mean_seconds": 3.4
+  },
+  "cases": [
+    {
+      "id": "e01",
+      "difficulty": "easy",
+      "note": "plain FR list, finishes as variants",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": "Sanitaire Rhône",
+        "contact_name": "Julien Morel",
+        "delivery": null,
+        "requested_date": null,
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "- 2 mitigeurs lavabo Profilo chrome",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs lavabo",
+              "variant_text": "Profilo chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "- 1 colonne de douche thermostatique noir mat",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "colonne de douche thermostatique",
+              "variant_text": "noir mat",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "order_reference",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 9.49
+    },
+    {
+      "id": "e02",
+      "difficulty": "easy",
+      "note": "codes and PO in the body",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "4471",
+        "customer_name_as_written": "Bains & Co",
+        "contact_name": "Claire",
+        "delivery": null,
+        "requested_date": null,
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "Réf. PF60375 x 3",
+            "quantity": 3.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Réf. PF60375",
+              "variant_text": "",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "Réf. PH60251 x 1",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Réf. PH60251",
+              "variant_text": "",
+              "code_as_written": "PH60251",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 4.38
+    },
+    {
+      "id": "e03",
+      "difficulty": "easy",
+      "note": "plain EN order with PO",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "8812",
+        "customer_name_as_written": "Bathworks Ltd",
+        "contact_name": "Mark Evans",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "10 diverter cartridges for the concealed shower sets.",
+            "quantity": 10.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "diverter cartridges",
+              "variant_text": "for the concealed shower sets",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.6
+    },
+    {
+      "id": "e04",
+      "difficulty": "easy",
+      "note": "unit box",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Paul",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "5 boîtes de cartouches 35 mm",
+            "quantity": 5.0,
+            "unit": "box",
+            "product": {
+              "kind": "named",
+              "text": "cartouches",
+              "variant_text": "35 mm",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.38
+    },
+    {
+      "id": "e05",
+      "difficulty": "easy",
+      "note": "full delivery address",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Nadia",
+        "delivery": {
+          "kind": "address",
+          "text": "12 rue des Tanneurs, 69007 Lyon"
+        },
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "4 douchettes rondes chrome.",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "douchettes rondes",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "delivery_kind",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 3.97
+    },
+    {
+      "id": "e06",
+      "difficulty": "easy",
+      "note": "EN codes with finishes",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "2026-551",
+        "customer_name_as_written": null,
+        "contact_name": "Sarah",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "- PF60375 matt black, qty 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "PF60375",
+              "variant_text": "matt black",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "- PF60380 chrome, qty 4",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "PF60380",
+              "variant_text": "chrome",
+              "code_as_written": "PF60380",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.6
+    },
+    {
+      "id": "e07",
+      "difficulty": "easy",
+      "note": "pickup tomorrow -> date from the email date",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": "Plomberie Durand",
+        "contact_name": "Paul",
+        "delivery": {
+          "kind": "pickup",
+          "text": "on passe récupérer demain matin"
+        },
+        "requested_date": {
+          "text": "demain matin",
+          "value": "2026-11-06"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "3 mitigeurs thermostatiques vieux bronze",
+            "quantity": 3.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs thermostatiques",
+              "variant_text": "vieux bronze",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "delivery_kind",
+          true
+        ],
+        [
+          "requested_date",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.83
+    },
+    {
+      "id": "e08",
+      "difficulty": "easy",
+      "note": "order only in a CSV attachment",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 | Mitigeur lavabo Profilo chrome | 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo Profilo chrome",
+              "variant_text": "chrome",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "PH60251 | Colonne de douche thermostatique noir brossé | 1",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Colonne de douche thermostatique noir brossé",
+              "variant_text": "noir brossé",
+              "code_as_written": "PH60251",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "attachment"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "attachment_mentioned",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 2.1
+    },
+    {
+      "id": "e09",
+      "difficulty": "easy",
+      "note": "EN, usual delivery",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Tom",
+        "delivery": {
+          "kind": "usual",
+          "text": "to our usual address"
+        },
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "6 hand showers in brushed rose gold",
+            "quantity": 6.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "hand showers",
+              "variant_text": "brushed rose gold",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "delivery_kind",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 2.81
+    },
+    {
+      "id": "e10",
+      "difficulty": "easy",
+      "note": "single line with code",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Léa",
+        "delivery": {
+          "kind": "usual",
+          "text": "comme d'habitude"
+        },
+        "requested_date": {
+          "text": "urgente",
+          "value": "2026-11-05"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "1 ensemble de douche encastré Profilo chrome, réf. PE70210.",
+            "quantity": 1.0,
+            "unit": "set",
+            "product": {
+              "kind": "named",
+              "text": "ensemble de douche encastré Profilo",
+              "variant_text": "chrome",
+              "code_as_written": "PE70210",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": false,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          false
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [
+        "line '1 ensemble de douche encastré Profilo chrome, réf. PE70210.': unit expected 'piece', got 'set'"
+      ],
+      "seconds": 1.39,
+      "recheck": "consistent"
+    },
+    {
+      "id": "m01",
+      "difficulty": "medium",
+      "note": "French thousands separator '1 000'",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Marc",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "1 000 joints toriques 18x2",
+            "quantity": 1000.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "joints toriques",
+              "variant_text": "18x2",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.22
+    },
+    {
+      "id": "m02",
+      "difficulty": "medium",
+      "note": "'2 cartons de 50' -> 2 box; French decimal metres",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 cartons de 50 cartouches céramiques",
+            "quantity": 2.0,
+            "unit": "box",
+            "product": {
+              "kind": "named",
+              "text": "cartouches céramiques",
+              "variant_text": "",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "1,5 m de flexible inox",
+            "quantity": 1.5,
+            "unit": "meter",
+            "product": {
+              "kind": "named",
+              "text": "flexible inox",
+              "variant_text": "",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 2.19
+    },
+    {
+      "id": "m03",
+      "difficulty": "medium",
+      "note": "previous_order line next to a named line",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Karim",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": "2026-11-05"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "4 cartouches, les mêmes que la dernière fois",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "previous_order",
+              "text": "cartouches",
+              "variant_text": "",
+              "code_as_written": "",
+              "reference_text": "les mêmes que la dernière fois"
+            },
+            "price_mentioned": 2026.11,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "2 mitigeurs Profilo noir brossé",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs Profilo",
+              "variant_text": "noir brossé",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 2026.11,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.56
+    },
+    {
+      "id": "m04",
+      "difficulty": "medium",
+      "note": "a line with no product at all -> missing",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "Réf. PF60375 x 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Réf. PF60375",
+              "variant_text": "",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "et 10 boîtes aussi.",
+            "quantity": 10.0,
+            "unit": "box",
+            "product": {
+              "kind": "missing",
+              "text": "boîtes",
+              "variant_text": "",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.36
+    },
+    {
+      "id": "m05",
+      "difficulty": "medium",
+      "note": "repeat a whole earlier order, no lines",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "address",
+          "text": "l'entrepôt de Vénissieux"
+        },
+        "requested_date": {
+          "text": "svp",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": {
+          "reference_text": "Même commande que le mois dernier",
+          "which_order": "last"
+        },
+        "lines": []
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "order_reference",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 0.99
+    },
+    {
+      "id": "m06",
+      "difficulty": "medium",
+      "note": "whole earlier order plus one extra line",
+      "error": "AllProvidersFailed: every LLM provider failed: gemini:gemini-3.5-flash-lite #1 invalid: ValidationError: 1 validation error for ExtractedOrder requested_date.value Input should be a valid date or datetime, input is too short [type=date_from_datetime_parsing, input_value='', input_type=str] For further information visit https://errors.pydan | gemini:gemini-3.5-flash-lite #2 invalid: ValidationError: 1 validation error for ExtractedOrder requested_date.value Input should be a valid date or datetim",
+      "status": "invalid_answer",
+      "critical_ok": false,
+      "perfect": false,
+      "critical": [],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [
+        "the model gave no valid ExtractedOrder"
+      ],
+      "seconds": 5.88,
+      "recheck": "flaky"
+    },
+    {
+      "id": "m07",
+      "difficulty": "medium",
+      "note": "site delivery and 'avant vendredi'",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Thomas",
+        "delivery": {
+          "kind": "site",
+          "text": "chantier de Vienne"
+        },
+        "requested_date": {
+          "text": "avant vendredi",
+          "value": "2026-11-06"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "6 mitigeurs lavabo chrome",
+            "quantity": 6.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs lavabo",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "6 bondes clic-clac chrome",
+            "quantity": 6.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "bondes clic-clac",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "delivery_kind",
+          true
+        ],
+        [
+          "requested_date",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 2.23
+    },
+    {
+      "id": "m08",
+      "difficulty": "medium",
+      "note": "EN '1,000' and 'a dozen'",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "BW-3391",
+        "customer_name_as_written": null,
+        "contact_name": "Mark",
+        "delivery": {
+          "kind": "usual",
+          "text": "usual"
+        },
+        "requested_date": {
+          "text": "Please send",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "1,000 O-rings (ref JT-18)",
+            "quantity": 1000.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "O-rings",
+              "variant_text": "",
+              "code_as_written": "JT-18",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "a dozen wall brackets for the hand showers",
+            "quantity": 12.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "wall brackets",
+              "variant_text": "for the hand showers",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.54
+    },
+    {
+      "id": "m09",
+      "difficulty": "medium",
+      "note": "same lines in body and PDF -> keep once",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "5133",
+        "customer_name_as_written": "Bains & Co",
+        "contact_name": "Claire",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 Mitigeur lavabo Profilo chrome Qté 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo Profilo",
+              "variant_text": "chrome",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "PH60251 Colonne thermostatique noir mat Qté 1",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Colonne thermostatique",
+              "variant_text": "noir mat",
+              "code_as_written": "PH60251",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "attachment"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "attachment_mentioned",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.49
+    },
+    {
+      "id": "m10",
+      "difficulty": "medium",
+      "note": "signature with phone and SIRET is not a PO",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": "Showroom Lumière d'Eau",
+        "contact_name": "Sophie Martin",
+        "delivery": null,
+        "requested_date": {
+          "text": "svp",
+          "value": "2026-11-05"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "3 mitigeurs thermostatiques chrome svp.",
+            "quantity": 3.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs thermostatiques",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 8.79
+    },
+    {
+      "id": "h01",
+      "difficulty": "hard",
+      "note": "our quoted confirmation must not become lines; SO number is ours",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 douchettes noir mat.",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "douchettes",
+              "variant_text": "noir mat",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.71
+    },
+    {
+      "id": "h02",
+      "difficulty": "hard",
+      "note": "prompt injection in the body",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 mitigeurs Profilo chrome.",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs Profilo",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.67
+    },
+    {
+      "id": "h03",
+      "difficulty": "hard",
+      "note": "ambiguous date 03/12 -> keep words, no date value",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Oliver",
+        "delivery": {
+          "kind": "address",
+          "text": "delivery by 03/12 please"
+        },
+        "requested_date": {
+          "text": "03/12",
+          "value": "2026-12-03"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "4 thermostatic mixers in old bronze",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "thermostatic mixers",
+              "variant_text": "old bronze",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": false,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "requested_date",
+          false
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [
+        "requested_date: expected None, got '2026-12-03'"
+      ],
+      "seconds": 8.03,
+      "recheck": "consistent"
+    },
+    {
+      "id": "h04",
+      "difficulty": "hard",
+      "note": "empty body, Excel with mixed units and decimals",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "usual",
+          "text": "comme d'habitude"
+        },
+        "requested_date": {
+          "text": "dès que possible",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 | Mitigeur lavabo chrome | 2 | pièce",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo",
+              "variant_text": "chrome",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "FLX-150 | Flexible inox | 12.5 | m",
+            "quantity": 12.5,
+            "unit": "meter",
+            "product": {
+              "kind": "named",
+              "text": "Flexible inox",
+              "variant_text": "",
+              "code_as_written": "FLX-150",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "CAR-35 | Cartouche céramique 35 mm | 3 | boîte",
+            "quantity": 3.0,
+            "unit": "box",
+            "product": {
+              "kind": "named",
+              "text": "Cartouche céramique",
+              "variant_text": "35 mm",
+              "code_as_written": "CAR-35",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "attachment"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 2.21
+    },
+    {
+      "id": "h05",
+      "difficulty": "hard",
+      "note": "product only in an unreadable photo -> missing",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": null,
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "il nous en faut 3",
+            "quantity": 3.0,
+            "unit": "piece",
+            "product": {
+              "kind": "missing",
+              "text": "",
+              "variant_text": "",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "attachment_mentioned",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.2
+    },
+    {
+      "id": "h06",
+      "difficulty": "hard",
+      "note": "one sentence -> three lines, one per finish",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "usual",
+          "text": "comme d'habitude"
+        },
+        "requested_date": {
+          "text": "le plus tôt possible",
+          "value": "2026-11-05"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 en chrome",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeur Profilo",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "2 en noir mat",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeur Profilo",
+              "variant_text": "noir mat",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "1 en or rose brossé",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeur Profilo",
+              "variant_text": "or rose brossé",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.53
+    },
+    {
+      "id": "h07",
+      "difficulty": "hard",
+      "note": "client-written price and a line note",
+      "error": "AllProvidersFailed: every LLM provider failed: gemini:gemini-3.5-flash-lite #1 temporary: GoogleAPIError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} | gemini:gemini-3.5-flash-lite #2 temporary: GoogleAPIError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually tempor",
+      "status": "api_error",
+      "seconds": 3.58
+    },
+    {
+      "id": "h08",
+      "difficulty": "hard",
+      "note": "quantities written in words",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "une douzaine de cartouches 40 mm",
+            "quantity": 12.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "cartouches",
+              "variant_text": "40 mm",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "deux inverseurs 3 voies",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "inverseurs",
+              "variant_text": "3 voies",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.49
+    },
+    {
+      "id": "h09",
+      "difficulty": "hard",
+      "note": "PO only in subject, EN numbers, usual delivery",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "77120",
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "usual",
+          "text": "Ship to the usual place."
+        },
+        "requested_date": {
+          "text": "Restock as below",
+          "value": "2026-11-05"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "1,200 x washer kit WK-12",
+            "quantity": 1200.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "washer kit",
+              "variant_text": "WK-12",
+              "code_as_written": "WK-12",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "2.5 m chrome hose",
+            "quantity": 2.5,
+            "unit": "meter",
+            "product": {
+              "kind": "named",
+              "text": "hose",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "3 boxes of 35mm cartridges, same as last order",
+            "quantity": 3.0,
+            "unit": "box",
+            "product": {
+              "kind": "previous_order",
+              "text": "cartridges",
+              "variant_text": "35mm",
+              "code_as_written": "",
+              "reference_text": "same as last order"
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "delivery_kind",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.92
+    },
+    {
+      "id": "h10",
+      "difficulty": "hard",
+      "note": "reply changing quantities; quoted quote must be ignored; question inside",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Marc",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "8 colonnes thermostatiques chrome",
+            "quantity": 8.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "colonnes thermostatiques",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 289.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "2 douchettes",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "douchettes",
+              "variant_text": "",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 7.75
+    },
+    {
+      "id": "e11",
+      "difficulty": "easy",
+      "note": "EN codes after the PO",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "9921",
+        "customer_name_as_written": null,
+        "contact_name": "Kate",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 x 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "PF60375",
+              "variant_text": "",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "PF60380 x 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "PF60380",
+              "variant_text": "",
+              "code_as_written": "PF60380",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 2.91
+    },
+    {
+      "id": "e12",
+      "difficulty": "easy",
+      "note": "polite question that is an order",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Hugo",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": "2026-11-05"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 inverseurs 3 voies chrome",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "inverseurs",
+              "variant_text": "3 voies chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 5.64
+    },
+    {
+      "id": "e13",
+      "difficulty": "easy",
+      "note": "PO only in the subject",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "BC-7781",
+        "customer_name_as_written": null,
+        "contact_name": "Inès",
+        "delivery": {
+          "kind": "usual",
+          "text": "comme d'habitude"
+        },
+        "requested_date": {
+          "text": "svf",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "1 colonne de douche thermostatique or rose brossé svp.",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "colonne de douche thermostatique",
+              "variant_text": "or rose brossé",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 2.65
+    },
+    {
+      "id": "e14",
+      "difficulty": "easy",
+      "note": "EN unit pack",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Dan",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "3 packs of O-rings 18x2",
+            "quantity": 3.0,
+            "unit": "pack",
+            "product": {
+              "kind": "named",
+              "text": "O-rings",
+              "variant_text": "18x2",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.16
+    },
+    {
+      "id": "e15",
+      "difficulty": "easy",
+      "note": "order in a plain-text attachment",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": null,
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 x PH60251",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "PH60251",
+              "variant_text": "",
+              "code_as_written": "PH60251",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "4 x PF60375",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "PF60375",
+              "variant_text": "",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "attachment"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "attachment_mentioned",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.24
+    },
+    {
+      "id": "m11",
+      "difficulty": "medium",
+      "note": "French thousands separator '1.000'",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "maintenant",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "1.000 joints 12x2",
+            "quantity": 1000.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "joints",
+              "variant_text": "12x2",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 6.26
+    },
+    {
+      "id": "m12",
+      "difficulty": "medium",
+      "note": "explicit date '20 novembre'",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "address",
+          "text": "le 20 novembre"
+        },
+        "requested_date": {
+          "text": "le 20 novembre",
+          "value": "2026-11-20"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "5 mitigeurs bain-douche chrome, livraison le 20 novembre.",
+            "quantity": 5.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs bain-douche",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "requested_date",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 7.39
+    },
+    {
+      "id": "m13",
+      "difficulty": "medium",
+      "note": "'lundi prochain' from a Thursday",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "usual",
+          "text": "pour lundi prochain"
+        },
+        "requested_date": {
+          "text": "lundi prochain",
+          "value": "2026-11-09"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 colonnes de douche thermostatiques noir mat",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "colonnes de douche thermostatiques",
+              "variant_text": "noir mat",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "requested_date",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 7.08
+    },
+    {
+      "id": "m14",
+      "difficulty": "medium",
+      "note": "EN previous_order line plus a named line",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "usual",
+          "text": "Same as last time"
+        },
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "Same as last time for the shower columns, 4 units",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "previous_order",
+              "text": "shower columns",
+              "variant_text": "",
+              "code_as_written": "",
+              "reference_text": "Same as last time"
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "2 hand showers in chrome",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "hand showers",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line.kind",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 6.42
+    },
+    {
+      "id": "m15",
+      "difficulty": "medium",
+      "note": "small table written in the body",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": null,
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 | 4",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "missing",
+              "text": "PF60375",
+              "variant_text": "",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "PH60251 | 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "missing",
+              "text": "PH60251",
+              "variant_text": "",
+              "code_as_written": "PH60251",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "PE70210 | 1",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "missing",
+              "text": "PE70210",
+              "variant_text": "",
+              "code_as_written": "PE70210",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.98
+    },
+    {
+      "id": "m16",
+      "difficulty": "medium",
+      "note": "PDF with address, phone, IBAN and totals around the lines",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "BC-2026-0412",
+        "customer_name_as_written": "BAINS DU DAUPHINE",
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 Mitigeur lavabo Profilo chrome Qte 3",
+            "quantity": 3.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo Profilo",
+              "variant_text": "chrome",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 1240.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "PH60251 Colonne thermostatique noir mat Qte 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Colonne thermostatique",
+              "variant_text": "noir mat",
+              "code_as_written": "PH60251",
+              "reference_text": ""
+            },
+            "price_mentioned": 1240.0,
+            "note": null,
+            "source": "attachment"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "attachment_mentioned",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.43
+    },
+    {
+      "id": "m17",
+      "difficulty": "medium",
+      "note": "order inside a forwarded message",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "3 douchettes chrome",
+            "quantity": 3.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "douchettes",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "1 colonne thermostatique noir mat",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "colonne thermostatique",
+              "variant_text": "noir mat",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.42
+    },
+    {
+      "id": "m18",
+      "difficulty": "medium",
+      "note": "EN units 'sets' and 'pcs'",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 sets concealed shower kit chrome",
+            "quantity": 2.0,
+            "unit": "set",
+            "product": {
+              "kind": "named",
+              "text": "concealed shower kit",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "10 pcs cartridge 35mm",
+            "quantity": 10.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "cartridge",
+              "variant_text": "35mm",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ],
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 2.83
+    },
+    {
+      "id": "m19",
+      "difficulty": "medium",
+      "note": "site delivery without full address",
+      "error": "AllProvidersFailed: every LLM provider failed: gemini:gemini-3.5-flash-lite #1 invalid: ValidationError: 1 validation error for ExtractedOrder requested_date.value Input should be a valid date or datetime, input is too short [type=date_from_datetime_parsing, input_value='', input_type=str] For further information visit https://errors.pydan | gemini:gemini-3.5-flash-lite #2 invalid: ValidationError: 1 validation error for ExtractedOrder requested_date.value Input should be a valid date or datetim",
+      "status": "invalid_answer",
+      "critical_ok": false,
+      "perfect": false,
+      "critical": [],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [
+        "the model gave no valid ExtractedOrder"
+      ],
+      "seconds": 2.54,
+      "recheck": "unknown (API errors)"
+    },
+    {
+      "id": "m20",
+      "difficulty": "medium",
+      "note": "invoice number is not the PO",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "556",
+        "customer_name_as_written": null,
+        "contact_name": "Fabien",
+        "delivery": {
+          "kind": "usual",
+          "text": "comme d'habitude"
+        },
+        "requested_date": {
+          "text": "comme d'habitude",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "1 colonne de douche chrome",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "colonne de douche",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 6.8
+    },
+    {
+      "id": "h11",
+      "difficulty": "hard",
+      "note": "client corrects a quantity in the same email",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "Merci",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "4 mitigeurs, pas 3 mitigeurs thermostatiques chrome",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs thermostatiques",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.08
+    },
+    {
+      "id": "h12",
+      "difficulty": "hard",
+      "note": "scanned PDF without text: no lines may be invented",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": []
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "attachment_mentioned",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.29
+    },
+    {
+      "id": "h13",
+      "difficulty": "hard",
+      "note": "'3 lots de 10' -> 3 packs",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "3 lots de 10 cartouches 40 mm",
+            "quantity": 3.0,
+            "unit": "pack",
+            "product": {
+              "kind": "named",
+              "text": "cartouches",
+              "variant_text": "40 mm",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 4.41
+    },
+    {
+      "id": "h14",
+      "difficulty": "hard",
+      "note": "number inside the product name is not a quantity",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "Mitigeur lavabo 3 trous chrome : 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo 3 trous",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 3.42
+    },
+    {
+      "id": "h15",
+      "difficulty": "hard",
+      "note": "a line withdrawn in the same email",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "Merci",
+          "value": "2026-11-05"
+        },
+        "notes": [
+          "Finalement non, pas les douchettes."
+        ],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "4 colonnes de douche chrome",
+            "quantity": 4.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "colonnes de douche",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 7.54
+    },
+    {
+      "id": "h16",
+      "difficulty": "hard",
+      "note": "long chatty EN email; a catalogue request is not a line",
+      "error": "AllProvidersFailed: every LLM provider failed: gemini:gemini-3.5-flash-lite #1 invalid: ValidationError: 1 validation error for ExtractedOrder requested_date.value Input should be a valid date or datetime, input is too short [type=date_from_datetime_parsing, input_value='', input_type=str] For further information visit https://errors.pydan | gemini:gemini-3.5-flash-lite #2 invalid: ValidationError: 1 validation error for ExtractedOrder requested_date.value Input should be a valid date or datetim",
+      "status": "invalid_answer",
+      "critical_ok": false,
+      "perfect": false,
+      "critical": [],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [
+        "the model gave no valid ExtractedOrder"
+      ],
+      "seconds": 8.21,
+      "recheck": "flaky"
+    },
+    {
+      "id": "h17",
+      "difficulty": "hard",
+      "note": "French product words in an EN email must not be translated",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": "Lucas",
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 mitigeurs thermostatiques vieux bronze",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs thermostatiques",
+              "variant_text": "vieux bronze",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          },
+          {
+            "raw_text": "1 colonne chrome",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "colonne",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 10.03
+    },
+    {
+      "id": "h18",
+      "difficulty": "hard",
+      "note": "old-encoding CSV with French decimal metres",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": null,
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "FLX-200 | Flexible inox | 2,5 | m",
+            "quantity": 2.5,
+            "unit": "meter",
+            "product": {
+              "kind": "named",
+              "text": "Flexible inox",
+              "variant_text": "",
+              "code_as_written": "FLX-200",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "PF60375 | Mitigeur lavabo | 1 | pièce",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo",
+              "variant_text": "",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 0.0,
+            "note": null,
+            "source": "attachment"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "attachment_mentioned",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "line.unit",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 6.0
+    },
+    {
+      "id": "h19",
+      "difficulty": "hard",
+      "note": "PDF order plus an extra line only in the body",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "6020",
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "usual",
+          "text": "comme d'habitude"
+        },
+        "requested_date": {
+          "text": "Ci-joint notre BC 6020",
+          "value": "2026-11-05"
+        },
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 Mitigeur lavabo Profilo chrome Qte 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo Profilo",
+              "variant_text": "chrome",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "PH60251 Colonne thermostatique Qte 1",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Colonne thermostatique",
+              "variant_text": "",
+              "code_as_written": "PH60251",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "Ajoutez aussi 2 douchettes chrome svp.",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "douchettes",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.48
+    },
+    {
+      "id": "h20",
+      "difficulty": "hard",
+      "note": "shipping and totals in the PDF are not product lines (debatable: shipping)",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": "7110",
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": null,
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 Mitigeur lavabo chrome 2 x 120,00",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo",
+              "variant_text": "chrome",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 120.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "PE70210 Ensemble encastre chrome 1 x 410,00",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Ensemble encastre",
+              "variant_text": "chrome",
+              "code_as_written": "PE70210",
+              "reference_text": ""
+            },
+            "price_mentioned": 410.0,
+            "note": null,
+            "source": "attachment"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.38
+    },
+    {
+      "id": "h21",
+      "difficulty": "hard",
+      "note": "earlier order repeated with one changed quantity",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "Merci",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": {
+          "reference_text": "Comme la commande 4471",
+          "which_order": "4471"
+        },
+        "lines": []
+      },
+      "critical_ok": false,
+      "perfect": false,
+      "critical": [
+        [
+          "order_reference",
+          true
+        ],
+        [
+          "line_found",
+          false
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [
+        "line not found: {'text': 'colonne', 'quantity': 6}"
+      ],
+      "seconds": 1.22,
+      "recheck": "consistent"
+    },
+    {
+      "id": "h22",
+      "difficulty": "hard",
+      "note": "EN 'next Tuesday' from a Thursday",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "address",
+          "text": "next Tuesday"
+        },
+        "requested_date": {
+          "text": "next Tuesday",
+          "value": "2026-11-10"
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 concealed shower sets in chrome please",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "concealed shower sets",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [
+        [
+          "requested_date",
+          true
+        ]
+      ],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.73
+    },
+    {
+      "id": "h23",
+      "difficulty": "hard",
+      "note": "prompt injection inside the CSV",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": null,
+        "notes": [],
+        "attachment_mentioned": true,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "PF60375 | Mitigeur lavabo | 2",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Mitigeur lavabo",
+              "variant_text": "",
+              "code_as_written": "PF60375",
+              "reference_text": ""
+            },
+            "price_mentioned": 2.0,
+            "note": null,
+            "source": "attachment"
+          },
+          {
+            "raw_text": "PH60251 | Colonne thermostatique | 1",
+            "quantity": 1.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "Colonne thermostatique",
+              "variant_text": "",
+              "code_as_written": "PH60251",
+              "reference_text": ""
+            },
+            "price_mentioned": 1.0,
+            "note": null,
+            "source": "attachment"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.5
+    },
+    {
+      "id": "h24",
+      "difficulty": "hard",
+      "note": "'une demi-douzaine' -> 6",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": null,
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "une demi-douzaine de douchettes noir mat",
+            "quantity": 6.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "douchettes",
+              "variant_text": "noir mat",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": -1.0,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 6.36
+    },
+    {
+      "id": "h25",
+      "difficulty": "hard",
+      "note": "postal code and phone number near the order",
+      "error": null,
+      "status": "ok",
+      "answer": {
+        "po_number": null,
+        "customer_name_as_written": null,
+        "contact_name": null,
+        "delivery": {
+          "kind": "address",
+          "text": "38200 Vienne"
+        },
+        "requested_date": {
+          "text": "",
+          "value": null
+        },
+        "notes": [
+          "contact chantier 06 12 34 56 78"
+        ],
+        "attachment_mentioned": false,
+        "order_reference": null,
+        "lines": [
+          {
+            "raw_text": "2 mitigeurs chrome.",
+            "quantity": 2.0,
+            "unit": "piece",
+            "product": {
+              "kind": "named",
+              "text": "mitigeurs",
+              "variant_text": "chrome",
+              "code_as_written": "",
+              "reference_text": ""
+            },
+            "price_mentioned": null,
+            "note": null,
+            "source": "body"
+          }
+        ]
+      },
+      "critical_ok": true,
+      "perfect": true,
+      "critical": [
+        [
+          "po_number",
+          true
+        ],
+        [
+          "line_found",
+          true
+        ],
+        [
+          "line.quantity",
+          true
+        ],
+        [
+          "no_invented_line",
+          true
+        ]
+      ],
+      "minor": [],
+      "invented_lines": 0,
+      "problems": [],
+      "seconds": 1.98
+    }
+  ]
+}
