@@ -19,11 +19,12 @@ MIN_SCORE = 0.5  # below this, a candidate is not a real match
 MIN_GAP = 0.15  # the best candidate must beat the second by this much to be a clear winner
 
 AGENT_REASONS: set[Reason] = {"no_candidates"}  # the agent can try other wordings in the catalogue
-AGENT_REASONS_WITH_CUSTOMER: set[Reason] = {"previous_order", "variant_missing"}  # need this customer's history
+AGENT_REASONS_WITH_CUSTOMER: set[Reason] = {"previous_order", "variant_missing", "llm_said_none"}  # need history
 
 
 def next_step(reason: Reason, customer_known: bool) -> NextStep:
-    """Who continues with an unresolved line. "ambiguous" goes to a person until the LLM choice step exists."""
+    """Who continues with an unresolved line. "ambiguous" lines first go to the LLM choice step (workflow/choose.py);
+    the next_step stored here is where they go if that step is skipped."""
     if reason in AGENT_REASONS or (reason in AGENT_REASONS_WITH_CUSTOMER and customer_known):
         return "agent"
     return "human"
