@@ -5,7 +5,7 @@ and AliasStore. The real ones (Odoo adapter, Postgres full-text + pgvector searc
 from collections.abc import Iterable, Mapping
 
 from orderdesk.catalogue.text import code_key, normalize, tokens
-from orderdesk.domain.catalogue import Candidate, Customer, Product
+from orderdesk.domain.catalogue import Candidate, Customer, PastOrder, Product
 
 
 class MemoryCatalogue:
@@ -14,10 +14,13 @@ class MemoryCatalogue:
         products: Iterable[Product],
         customers: Mapping[str, Customer] | None = None,  # email address -> customer
         aliases: Mapping[tuple[int, str], str] | None = None,  # (customer id, client words) -> product code
+        past_orders: Mapping[int, Iterable[PastOrder]] | None = None,  # customer id -> confirmed orders
     ) -> None:
         self._products = {code_key(p.code): p for p in products}
         self._customers = {email.lower(): customer for email, customer in (customers or {}).items()}
         self._aliases = {(cid, normalize(text)): code for (cid, text), code in (aliases or {}).items()}
+        self._orders = {cid: sorted(orders, key=lambda o: o.date, reverse=True)
+                        for cid, orders in (past_orders or {}).items()}
         self._tokens = {
             key: tokens(f"{p.code} {p.name} {p.finish or ''}") for key, p in self._products.items()
         }
@@ -27,6 +30,13 @@ class MemoryCatalogue:
 
     def get_product(self, code: str) -> Product | None:
         return self._products.get(code_key(code))
+
+    def past_orders(self, customer_id: int, limit: int) -> list[PastOrder]:
+        return self._orders.get(customer_id, [])[:limit]
+
+    def get_order(self, customer_id: int, order_id: str) -> PastOrder | None:
+        wanted = code_key(order_id)
+        return next((o for o in self._orders.get(customer_id, []) if code_key(o.order_id) == wanted), None)
 
     def search(self, text: str, limit: int) -> list[Candidate]:
         """Score = share of the client's words found in the product (code, name, finish)."""

@@ -6,7 +6,7 @@ from orderdesk.config import load_settings
 from orderdesk.domain.classification import EmailClassification
 from orderdesk.domain.extraction import ExtractedOrder
 from orderdesk.domain.resolution import CandidateChoice
-from orderdesk.llm.client import make_fallback_llm
+from orderdesk.llm.client import make_fallback_llm, make_fallback_tool_llm
 from orderdesk.profiles.demo_catalogue import make_demo_catalogue
 from orderdesk.profiles.ondyna import ONDYNA_PROFILE
 from orderdesk.storage import LocalStorage
@@ -27,6 +27,7 @@ def make_graph() -> CompiledStateGraph:
         classify_llm=make_fallback_llm(PROVIDER_CHAIN, EmailClassification),
         extract_llm=make_fallback_llm(PROVIDER_CHAIN, ExtractedOrder),
         choose_llm=make_fallback_llm(PROVIDER_CHAIN, CandidateChoice),
+        agent_llm=make_fallback_tool_llm(PROVIDER_CHAIN),
         profile=ONDYNA_PROFILE,
         storage=LocalStorage(settings.storage_dir),
         erp=catalogue,

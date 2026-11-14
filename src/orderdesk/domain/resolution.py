@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from orderdesk.domain.catalogue import Candidate, Customer, Product
 
-Method = Literal["alias", "exact_code", "search", "llm_choice"]  # later: "agent"
+Method = Literal["alias", "exact_code", "search", "llm_choice", "agent"]
 Reason = Literal[
     "product_missing",  # the client wrote no product ("et 10 boîtes aussi"): only the client knows
     "previous_order",  # "les mêmes que la dernière fois": the answer is in past orders
@@ -18,6 +18,7 @@ Reason = Literal[
     "no_candidates",  # product words exist but the search found nothing close
     "ambiguous",  # several different products match equally well: the LLM choice step reads the email
     "llm_said_none",  # the LLM read the email and none of the candidates clearly fits
+    "agent_failed",  # the agent found nothing, gave up, or its proposal failed the code checks: a person decides
 ]
 NextStep = Literal["done", "agent", "human"]
 
@@ -55,6 +56,33 @@ class CandidateChoice(BaseModel):
         )
     )
     code: str = Field(description="One candidate code exactly as listed, or NONE if no candidate clearly fits.")
+
+
+class AgentProposal(BaseModel):
+    """Your final answer for this order line. Call it once, as your last step."""
+
+    # Bound as a tool: the docstring and descriptions reach the model. Evidence comes first on purpose.
+    # It is a PROPOSAL: code checks it (agents/resolver_checks.py), then a person reviews it.
+
+    model_config = ConfigDict(extra="forbid")
+
+    evidence: str = Field(
+        description=(
+            "What you found that supports the answer, quoted from the tool results "
+            "(e.g. 'SO-2291 of 2026-10-02: CAR-35 Cartouche céramique 35 mm, qty 4'). "
+            "With NONE: what you tried and why nothing fits."
+        )
+    )
+    source: Literal["past_order", "catalogue", "none"] = Field(
+        description=(
+            "past_order: the answer comes from one of this customer's earlier orders. "
+            "catalogue: from a catalogue search or a product lookup. none: when code is NONE."
+        )
+    )
+    source_order_id: str | None = Field(
+        None, description="When source is past_order: the order id exactly as the tool gave it (e.g. 'SO-2291')."
+    )
+    code: str = Field(description="The product code exactly as a tool gave it, or NONE if you could not decide.")
 
 
 class ResolvedOrder(BaseModel):

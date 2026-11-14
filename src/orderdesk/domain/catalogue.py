@@ -1,5 +1,7 @@
 """What the company sells and who buys it, as the resolver sees it (read from the ERP)."""
 
+import datetime
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -19,6 +21,25 @@ class Customer(BaseModel):
 
     id: int
     name: str
+
+
+class PastOrderLine(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    code: str
+    name: str
+    finish: str | None = None
+    quantity: float
+
+
+class PastOrder(BaseModel):
+    """A CONFIRMED order (Odoo state "sale"), never an OrderDesk draft: "same as last time" must not copy a copy."""
+
+    model_config = ConfigDict(frozen=True)
+
+    order_id: str  # e.g. "SO-2291"
+    date: datetime.date
+    lines: list[PastOrderLine]
 
 
 class Candidate(BaseModel):

@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage
 from pydantic import BaseModel, ValidationError
 
 log = logging.getLogger(__name__)
@@ -129,8 +129,8 @@ class FallbackLLM:
 
 #  real providers 
 
-def make_structured_llm(provider: str, model: str, schema: type[BaseModel]) -> ChatLike:
-    """One provider, answering with `schema`. max_retries=0: FallbackLLM decides about retries."""
+def make_chat(provider: str, model: str) -> Any:
+    """One provider's chat model. max_retries=0: FallbackLLM decides about retries."""
     if provider == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -151,10 +151,29 @@ def make_structured_llm(provider: str, model: str, schema: type[BaseModel]) -> C
         api_key=os.environ["NVIDIA_API_KEY"], temperature=0, timeout=60, max_retries=0)
     else:
         raise ValueError(f"unknown provider {provider!r}")
-    return chat.with_structured_output(schema, method="function_calling")
+    return chat
+
+
+def make_structured_llm(provider: str, model: str, schema: type[BaseModel]) -> ChatLike:
+    """One provider, answering with `schema`."""
+    return make_chat(provider, model).with_structured_output(schema, method="function_calling")
 
 
 def make_fallback_llm(chain: Sequence[tuple[str, str]], schema: type[BaseModel]) -> FallbackLLM:
     """chain: [("mistral", "mistral-small-latest"), ("groq", "llama-3.3-70b-versatile")]"""
     providers = [Provider(f"{p}:{m}", make_structured_llm(p, m, schema)) for p, m in chain]
     return FallbackLLM(providers, schema)
+
+
+ToolLLMFactory = Callable[[Sequence[Any]], ChatLike]
+"""Given the tools of ONE agent run, a ChatLike that answers with an AIMessage (text and/or tool calls)."""
+
+
+def make_fallback_tool_llm(chain: Sequence[tuple[str, str]]) -> ToolLLMFactory:
+    """For agents: the tools differ per run (they are bound to one customer), so they are bound per run."""
+    chats = [(f"{p}:{m}", make_chat(p, m)) for p, m in chain]
+
+    def bind(tools: Sequence[Any]) -> FallbackLLM:
+        return FallbackLLM([Provider(name, chat.bind_tools(list(tools))) for name, chat in chats], AIMessage)
+
+    return bind

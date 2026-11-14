@@ -2,8 +2,10 @@
 Product names and references are invented in the style of a tap and shower distributor.
 """
 
+import datetime
+
 from orderdesk.catalogue.memory import MemoryCatalogue
-from orderdesk.domain.catalogue import Customer, Product
+from orderdesk.domain.catalogue import Customer, PastOrder, PastOrderLine, Product
 
 _FINISHES = {
     "Mitigeur lavabo Profilo": ("PF60375", ["chrome", "noir brossé", "noir mat", "or rose brossé"]),
@@ -37,5 +39,24 @@ DEMO_CUSTOMERS = {
 DEMO_ALIASES = {(2, "robinet profilo noir"): "PF60376"}  # Bains & Co calls the brushed-black basin mixer this
 
 
+_BY_CODE = {p.code: p for p in DEMO_PRODUCTS}
+
+
+def _order(order_id: str, day: datetime.date, *lines: tuple[str, float]) -> PastOrder:
+    return PastOrder(order_id=order_id, date=day, lines=[
+        PastOrderLine(code=code, name=_BY_CODE[code].name, finish=_BY_CODE[code].finish, quantity=quantity)
+        for code, quantity in lines
+    ])
+
+
+DEMO_PAST_ORDERS = {  # confirmed orders only
+    2: [  # Bains & Co: usually black finishes
+        _order("SO-2291", datetime.date(2026, 10, 2), ("CAR-35", 4), ("PF60375", 2)),
+        _order("SO-2204", datetime.date(2026, 9, 10), ("PH60252", 2), ("DR10011", 3)),
+    ],
+    1: [_order("SO-2310", datetime.date(2026, 10, 20), ("PH60251", 6))],  # Sanitaire Rhône
+}
+
+
 def make_demo_catalogue() -> MemoryCatalogue:
-    return MemoryCatalogue(DEMO_PRODUCTS, DEMO_CUSTOMERS, DEMO_ALIASES)
+    return MemoryCatalogue(DEMO_PRODUCTS, DEMO_CUSTOMERS, DEMO_ALIASES, DEMO_PAST_ORDERS)
