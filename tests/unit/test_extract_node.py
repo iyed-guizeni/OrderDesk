@@ -61,12 +61,21 @@ def test_read_attachments_splits_readable_and_unreadable_files() -> None:
 # ---------- the node ----------
 
 
-def test_node_returns_only_the_extracted_order() -> None:
+def test_node_returns_the_order_and_its_grounding_issues() -> None:
     answer = make_answer()
 
     update = run_node(FakeLLM(answer))
 
-    assert update == {"extracted_order": answer}
+    assert update == {"extracted_order": answer, "grounding_issues": []}  # the answer is in the PDF
+
+
+def test_node_flags_a_line_that_is_not_in_the_email() -> None:
+    invented = ExtractedLine(raw_text="10 colonnes de douche", quantity=10, product=ProductInfo(kind="named"))
+    answer = ExtractedOrder(lines=[invented])
+
+    issues = run_node(FakeLLM(answer))["grounding_issues"]
+
+    assert [(issue.kind, issue.line_index) for issue in issues] == [("line_not_in_source", 0)]
 
 
 def test_node_fails_clearly_when_the_llm_gives_no_answer() -> None:

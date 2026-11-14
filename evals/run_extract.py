@@ -214,8 +214,10 @@ def run_case(extract, case: dict, email_id: int) -> dict:
     start = time.perf_counter()
     try:
         state, storage = build_input(case, email_id)
-        order = extract(state, storage)
-        row.update(status="ok", answer=order.model_dump(mode="json"), **score(case["expected"], order))
+        update = extract(state, storage)
+        order = update["extracted_order"]
+        row.update(status="ok", answer=order.model_dump(mode="json"), **score(case["expected"], order),
+                   grounding=[issue.model_dump() for issue in update["grounding_issues"]])
     except Exception as error:
         row["error"] = f"{type(error).__name__}: {' '.join(str(error).split())}"[:500]
         if _is_api_error(error):
@@ -269,6 +271,9 @@ def metrics(rows: list[dict]) -> dict:
         "perfect": sum(row["perfect"] for row in scored),
         "minor_fields_rate": round(minor_ok / minor_total, 3) if minor_total else 1.0,
         "invented_lines": sum(row["invented_lines"] for row in scored),
+        # grounding checks run in production too: flagged cases, and flags on answers that were in fact right
+        "grounding_flagged": sum(bool(row.get("grounding")) for row in scored),
+        "grounding_false_alarms": sum(bool(row.get("grounding")) and row["perfect"] for row in scored),
         "critical_clean_per_difficulty": {k: f"{ok}/{n}" for k, (ok, n) in sorted(per_difficulty.items())},
         "fields": {name: f"{ok}/{n}" for name, (ok, n) in sorted(fields.items())},
         "mean_seconds": round(sum(row["seconds"] for row in scored) / len(scored), 2) if scored else None,
@@ -298,8 +303,8 @@ def verdict(m: dict, rows: list[dict]) -> tuple[str, list[str]]:
 def evaluate_model(provider: str, model: str, cases: list[dict], system_prompt: str, recheck_runs: int) -> dict:
     llm = make_fallback_llm([(provider, model)], ExtractedOrder)  # one model at a time; retries 429/timeouts
 
-    def extract(state: WorkflowState, storage: MemoryStorage) -> ExtractedOrder:
-        return make_extract_node(llm, ONDYNA_PROFILE, storage)(state)["extracted_order"]
+    def extract(state: WorkflowState, storage: MemoryStorage) -> dict:
+        return make_extract_node(llm, ONDYNA_PROFILE, storage)(state)
 
     print(f"\n=== {provider}:{model} ===")
     email_ids = {case["id"]: 3000 + number for number, case in enumerate(cases)}
@@ -370,6 +375,7 @@ def _print_report(result: dict, rows: list[dict]) -> None:
     print(f"Perfect cases: {m['perfect']}/{m['scored']}   minor fields: {m['minor_fields_rate']:.0%}"
           f"   invented lines: {m['invented_lines']}   invalid answers: {m['invalid_answers']}"
           f"   API errors: {m['api_errors']}   mean time: {m['mean_seconds']}s")
+    print(f"Grounding: {m['grounding_flagged']} case(s) flagged, {m['grounding_false_alarms']} of them on right answers")
     for field, value in m["fields"].items():
         print(f"  {field:<20} {value}")
     for row in rows:
@@ -379,6 +385,8 @@ def _print_report(result: dict, rows: list[dict]) -> None:
             level = "CRITICAL" if not row["critical_ok"] else "minor"
             again = f", recheck: {row['recheck']}" if "recheck" in row else ""
             print(f"\n- {row['id']} [{level}{again}] ({row['difficulty']}, {row['note']})")
+            for issue in row.get("grounding", []):
+                print(f"    grounding: {issue['kind']} (line {issue['line_index']}): {issue['value']!r}")
             for problem in row["problems"]:
                 print(f"    {problem}")
     print(f"\nSaved: {result['file']}")
