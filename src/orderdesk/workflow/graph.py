@@ -4,7 +4,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from orderdesk.catalogue.ports import AliasStore, ErpPort, ProductSearch
-from orderdesk.llm.client import ChatLike, ToolLLMFactory
+from orderdesk.llm.client import ChatLike, ToolBindable
 from orderdesk.storage import Storage
 from orderdesk.workflow import after_sales, amendment, cancellation, other, quote_request, triage
 from orderdesk.workflow.choose import make_choose_node, needs_choice
@@ -25,7 +25,7 @@ def build_graph(
     classify_llm: ChatLike,
     extract_llm: ChatLike,
     choose_llm: ChatLike,
-    agent_llm: ToolLLMFactory,
+    agent_llm: ToolBindable,
     profile: str,
     storage: Storage,
     erp: ErpPort,

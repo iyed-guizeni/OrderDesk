@@ -20,12 +20,13 @@ def classified_as(label: str) -> FakeLLM:
     return FakeLLM(EmailClassification(evidence="2 mitigeurs Profilo", label=label, confidence="high"))
 
 
-def no_agent(tools):
-    raise AssertionError("the agent must not run in this test")
+class NoAgent:
+    def bind_tools(self, tools):
+        raise AssertionError("the agent must not run in this test")
 
 
 def make_graph(
-    classify_llm: FakeLLM, extract_llm: FakeLLM, choose_llm: FakeLLM | None = None, agent_llm=no_agent
+    classify_llm: FakeLLM, extract_llm: FakeLLM, choose_llm: FakeLLM | None = None, agent_llm=NoAgent()
 ):
     choose_llm = choose_llm or FakeLLM(None)  # fails if called: most tests must not reach the choice step
     return build_graph(classify_llm, extract_llm, choose_llm, agent_llm, PROFILE, FakeStorage(), CATALOGUE, CATALOGUE,

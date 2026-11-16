@@ -36,13 +36,13 @@ def answer(code: str, source: str = "past_order", order_id: str | None = "SO-229
 
 
 class FakeAgentLLM:
-    """A ToolLLMFactory: records which tools were bound, then answers with the scripted messages."""
+    """A ToolBindable: records which tools were bound, then answers with the scripted messages."""
 
     def __init__(self, *answers) -> None:
         self.llm = FakeLLM(*answers)
         self.bound: list[str] = []
 
-    def __call__(self, tools) -> "FakeAgentLLM":
+    def bind_tools(self, tools) -> "FakeAgentLLM":
         self.bound = [getattr(t, "name", getattr(t, "__name__", "?")) for t in tools]
         return self
 

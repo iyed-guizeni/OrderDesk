@@ -15,7 +15,7 @@ from orderdesk.catalogue.ports import ErpPort, ProductSearch
 from orderdesk.domain.catalogue import Customer
 from orderdesk.domain.extraction import ExtractedLine
 from orderdesk.domain.resolution import LineResolution
-from orderdesk.llm.client import AllProvidersFailed, ToolLLMFactory
+from orderdesk.llm.client import AllProvidersFailed, ToolBindable
 from orderdesk.prompts.resolver_agent import build_system_prompt, build_user_prompt
 from orderdesk.workflow.state import WorkflowState
 
@@ -32,12 +32,12 @@ def _failed(resolution: LineResolution, why: str) -> LineResolution:
 
 
 def agent_line(
-    llm_factory: ToolLLMFactory, system_prompt: str, line: ExtractedLine, resolution: LineResolution,
+    llm: ToolBindable, system_prompt: str, line: ExtractedLine, resolution: LineResolution,
     customer: Customer | None, erp: ErpPort, search: ProductSearch,
 ) -> LineResolution:
     tools = make_resolver_tools(erp, search, customer)  # built here, per line: never bound to another customer
     try:
-        proposal, why = run_resolver_agent(llm_factory, tools, system_prompt, build_user_prompt(line, resolution))
+        proposal, why = run_resolver_agent(llm, tools, system_prompt, build_user_prompt(line, resolution))
     except AllProvidersFailed as error:
         log.error("resolver agent could not run (line %s): %s", resolution.line_index, error)
         return _failed(resolution, "the agent could not run (LLM providers failed)")
@@ -53,7 +53,7 @@ def agent_line(
 
 
 def make_resolve_agent_node(
-    llm_factory: ToolLLMFactory, profile: str, erp: ErpPort, search: ProductSearch
+    llm: ToolBindable, profile: str, erp: ErpPort, search: ProductSearch
 ) -> Callable[[WorkflowState], dict]:
     system_prompt = build_system_prompt(profile, MAX_MODEL_CALLS)
 
@@ -62,7 +62,7 @@ def make_resolve_agent_node(
             raise ValueError("cannot run the agent before resolve")
         order = state.resolved_order
         lines = [
-            agent_line(llm_factory, system_prompt, state.extracted_order.lines[r.line_index], r, order.customer,
+            agent_line(llm, system_prompt, state.extracted_order.lines[r.line_index], r, order.customer,
                        erp, search)
             if r.next_step == "agent" else r
             for r in order.lines

@@ -28,6 +28,12 @@ class ChatLike(Protocol):
     def invoke(self, messages: Sequence[BaseMessage], /) -> Any: ...
 
 
+class ToolBindable(ChatLike, Protocol):
+    """A ChatLike that can be given tools, like a LangChain chat model: llm.bind_tools(tools).invoke(...)."""
+
+    def bind_tools(self, tools: Sequence[Any], /) -> ChatLike: ...
+
+
 class InvalidAnswer(Exception):
     """The model answered, but not with the expected structure."""
 
@@ -126,6 +132,11 @@ class FallbackLLM:
         self.last_call = record
         raise AllProvidersFailed(record.errors)
 
+    def bind_tools(self, tools: Sequence[Any], /) -> "FallbackLLM":
+        """The same providers with these tools bound. A new FallbackLLM: the original stays without tools."""
+        providers = [Provider(p.name, p.llm.bind_tools(list(tools))) for p in self.providers]
+        return FallbackLLM(providers, AIMessage, self.sleep)
+
 
 #  real providers 
 
@@ -165,15 +176,6 @@ def make_fallback_llm(chain: Sequence[tuple[str, str]], schema: type[BaseModel])
     return FallbackLLM(providers, schema)
 
 
-ToolLLMFactory = Callable[[Sequence[Any]], ChatLike]
-"""Given the tools of ONE agent run, a ChatLike that answers with an AIMessage (text and/or tool calls)."""
-
-
-def make_fallback_tool_llm(chain: Sequence[tuple[str, str]]) -> ToolLLMFactory:
-    """For agents: the tools differ per run (they are bound to one customer), so they are bound per run."""
-    chats = [(f"{p}:{m}", make_chat(p, m)) for p, m in chain]
-
-    def bind(tools: Sequence[Any]) -> FallbackLLM:
-        return FallbackLLM([Provider(name, chat.bind_tools(list(tools))) for name, chat in chats], AIMessage)
-
-    return bind
+def make_fallback_chat(chain: Sequence[tuple[str, str]]) -> FallbackLLM:
+    """Plain chat models, for agents: call .bind_tools(tools) per run (the tools are bound to one customer)."""
+    return FallbackLLM([Provider(f"{p}:{m}", make_chat(p, m)) for p, m in chain], AIMessage)
