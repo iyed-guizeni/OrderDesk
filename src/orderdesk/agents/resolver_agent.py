@@ -42,6 +42,11 @@ def _answered(messages: Sequence[AnyMessage]) -> AgentProposal | None:
     return None
 
 
+def answered_or_continue(state: MessagesState) -> str:
+    """After the tools: stop when an AgentProposal was accepted, otherwise back to the model."""
+    return END if _answered(state["messages"]) else "agent"
+
+
 def build_resolver_agent(llm: ChatLike, tools: Sequence[BaseTool]):
     def agent(state: MessagesState) -> dict:
         return {"messages": [llm.invoke(state["messages"])]}
@@ -51,18 +56,27 @@ def build_resolver_agent(llm: ChatLike, tools: Sequence[BaseTool]):
     builder.add_node("tools", ToolNode([*tools, submit_answer]))
     builder.add_edge(START, "agent")
     builder.add_conditional_edges("agent", tools_condition)  # tool calls -> "tools", none -> END
-    builder.add_conditional_edges("tools", lambda s: END if _answered(s["messages"]) else "agent", ["agent", END])
+    builder.add_conditional_edges("tools", answered_or_continue, ["agent", END])
     return builder.compile()
 
 
 def run_resolver_agent(
-    llm: ToolBindable, tools: Sequence[BaseTool], system_prompt: str, user_prompt: str
+    llm: ToolBindable, tools: Sequence[BaseTool], system_prompt: str, user_prompt: str,
+    metadata: dict | None = None,
 ) -> tuple[AgentProposal | None, str | None]:
-    """(the proposal, None), or (None, why there is none). The proposal is NOT checked yet."""
+    """(the proposal, None), or (None, why there is none). The proposal is NOT checked yet.
+    metadata: ids for tracing (tenant, email, line, reason). Never the sender address or customer name."""
     graph = build_resolver_agent(llm.bind_tools([*tools, submit_answer]), tools)
     start = {"messages": [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]}
+    metadata = metadata or {}
+    config = {
+        "recursion_limit": 2 * MAX_MODEL_CALLS,  # agent + tools = 2 steps per model call
+        "run_name": "resolver_agent",
+        "tags": ["resolver_agent", f"reason:{metadata.get('reason', 'unknown')}"],
+        "metadata": metadata,
+    }
     try:
-        final = graph.invoke(start, {"recursion_limit": 2 * MAX_MODEL_CALLS})  # agent + tools = 2 steps per call
+        final = graph.invoke(start, config)
     except GraphRecursionError:
         return None, f"no answer after {MAX_MODEL_CALLS} model calls"
     proposal = _answered(final["messages"])
