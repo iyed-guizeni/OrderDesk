@@ -19,11 +19,9 @@ PROVIDER_CHAIN = [
     ("gemini", "gemini-3.5-flash-lite"),  
 ]
 
-
-def make_graph() -> CompiledStateGraph:
-    settings = load_settings()
-    catalogue = make_demo_catalogue()  # synthetic data until the Odoo adapter exists
-    return build_graph(
+settings = load_settings()
+catalogue = make_demo_catalogue()
+GRAPH =  build_graph(
         classify_llm=make_fallback_llm(PROVIDER_CHAIN, EmailClassification),
         extract_llm=make_fallback_llm(PROVIDER_CHAIN, ExtractedOrder),
         choose_llm=make_fallback_llm(PROVIDER_CHAIN, CandidateChoice),
@@ -34,3 +32,8 @@ def make_graph() -> CompiledStateGraph:
         search=catalogue,
         aliases=catalogue,
     )
+
+def make_graph() -> CompiledStateGraph:
+  # synthetic data until the Odoo adapter exists
+
+    return GRAPH
