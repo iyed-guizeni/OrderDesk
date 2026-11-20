@@ -9,9 +9,9 @@ Works for any business: company-specific words come from the business profile, n
 """
 
 from datetime import date
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 Unit = Literal["piece", "box", "pack", "set", "pallet", "meter", "kg", "tonne", "liter", "other"]
 
@@ -89,9 +89,19 @@ class Delivery(_Model):
     text: str | None = Field(None, description="The delivery words exactly as written.")
 
 
+def _date_from_parts(value: Any) -> Any:
+    """LangGraph Studio shows a date in the state as [year, month, day] and sends it back like that on resume."""
+    if isinstance(value, list | tuple) and len(value) == 3:
+        return date(*value)
+    return value
+
+
+StateDate = Annotated[date, BeforeValidator(_date_from_parts)]  # a date that survives Studio's state view
+
+
 class RequestedDate(_Model):
     text: str = Field(description="The client's words about timing exactly as written ('avant vendredi', 'urgent').")
-    value: date | None = Field(
+    value: StateDate | None = Field(
         None,
         description=(
             "The date as YYYY-MM-DD ONLY if it is certain from the text and the email date given in the prompt. "

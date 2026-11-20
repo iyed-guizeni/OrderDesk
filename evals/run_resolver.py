@@ -1,0 +1,186 @@
+"""Does the Resolver agent find the right product, or hand the line to a person when it should?
+
+Runs the agent ALONE (not the whole graph, not the code checks after it) on the cases of evals/resolver/ondyna.jsonl, as a LangSmith
+experiment: one trace per case, the scores of resolver_metrics.py on each trace, and a summary.
+
+    venv\\Scripts\\python -m evals.run_resolver                      # first model of the chain
+    venv\\Scripts\\python -m evals.run_resolver --model gemini:gemini-3.5-flash-lite
+    venv\\Scripts\\python -m evals.run_resolver --only po-01,vm-05   # a few cases while debugging
+
+Each case starts from the line Extract would give. The REAL ladder computes the reason and the candidates,
+so the agent sees exactly what production gives it; a case whose ladder reason differs is a broken case.
+Synthetic data only: the traces contain the prompts and tool results.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import time
+from pathlib import Path
+
+from dotenv import load_dotenv
+from langsmith import Client
+
+from evals.resolver_metrics import run_facts, score_case, summarize
+from orderdesk.agents.resolver_agent import MAX_MODEL_CALLS, run_resolver_agent
+from orderdesk.agents.resolver_tools import make_resolver_tools
+from orderdesk.catalogue.memory import MemoryCatalogue
+from orderdesk.domain.extraction import ExtractedLine
+from orderdesk.domain.resolution import LineResolution
+from orderdesk.llm.client import AllProvidersFailed, make_fallback_chat
+from orderdesk.profiles.demo_catalogue import DEMO_CUSTOMERS, make_demo_catalogue
+from orderdesk.profiles.ondyna import ONDYNA_PROFILE
+from orderdesk.prompts.resolver_agent import build_system_prompt, build_user_prompt
+from orderdesk.resolve.ladder import resolve_line as ladder_line
+from orderdesk.workflow.studio import PROVIDER_CHAIN
+
+CASES = Path(__file__).parent / "resolver" / "ondyna.jsonl"
+CATALOGUE = make_demo_catalogue()
+CUSTOMERS = {customer.id: customer for customer in DEMO_CUSTOMERS.values()}
+
+
+# ---------- the dataset ----------
+
+
+def load_cases() -> list[dict]:
+    return [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def upload_dataset(client: Client, cases: list[dict]) -> str:
+    """One dataset per version of the case file: a changed case never mixes with old experiments."""
+    digest = hashlib.sha256(json.dumps(cases, sort_keys=True).encode()).hexdigest()[:8]
+    name = f"orderdesk-resolver-{digest}"
+    if not client.has_dataset(dataset_name=name):
+        dataset = client.create_dataset(name, description=f"Resolver agent cases from {CASES.name} ({len(cases)})")
+        client.create_examples(dataset_id=dataset.id, examples=[
+            {"inputs": case["input"], "outputs": case["expected"],
+             "metadata": {"case": case["id"], "difficulty": case["difficulty"], "reason": case["input"]["reason"],
+                          "note": case["note"], "fault": bool(case["input"].get("fault"))}}
+            for case in cases
+        ])
+    return name
+
+
+# ---------- injected faults ----------
+
+
+class FaultyCatalogue:
+    """The demo catalogue with ONE tool broken: error_once, error_always, or empty (no history)."""
+
+    METHODS = {"find_past_orders": "past_orders", "search_catalogue": "search"}
+
+    def __init__(self, catalogue: MemoryCatalogue, fault: dict) -> None:
+        self._catalogue = catalogue
+        self._method = self.METHODS[fault["tool"]]
+        self._kind = fault["kind"]
+        self._calls = 0
+
+    def __getattr__(self, name: str):
+        real = getattr(self._catalogue, name)
+        if name != self._method:
+            return real
+
+        def broken(*args, **kwargs):
+            self._calls += 1
+            if self._kind == "empty":
+                return []
+            if self._kind == "error_always" or self._calls == 1:
+                raise ConnectionError("synthetic fault: the ERP did not answer")
+            return real(*args, **kwargs)
+
+        return broken
+
+
+# ---------- the target: one case -> the agent -> facts ----------
+
+
+def starting_point(inputs: dict) -> tuple[ExtractedLine, LineResolution]:
+    """The line, and the resolution the ladder (and for llm_said_none, the choice step) hands to the agent."""
+    line = ExtractedLine.model_validate(inputs["line"])
+    customer = CUSTOMERS.get(inputs["customer_id"])
+    resolution = ladder_line(0, line, customer, CATALOGUE, CATALOGUE, CATALOGUE)
+    wanted = "ambiguous" if inputs["reason"] == "llm_said_none" else inputs["reason"]
+    if resolution.reason != wanted:
+        raise ValueError(f"broken case: the ladder says {resolution.reason!r}, the case says {inputs['reason']!r}")
+    if inputs["reason"] == "llm_said_none":  # what the choice step writes when no candidate fits
+        resolution = resolution.model_copy(update={"reason": "llm_said_none", "evidence": inputs.get("earlier_note"),
+                                                   "next_step": "agent"})
+    return line, resolution
+
+
+def make_target(llm, system_prompt: str):
+    def resolver_agent_case(inputs: dict) -> dict:
+        line, resolution = starting_point(inputs)
+        catalogue = FaultyCatalogue(CATALOGUE, inputs["fault"]) if inputs.get("fault") else CATALOGUE
+        tools = make_resolver_tools(catalogue, catalogue, CUSTOMERS.get(inputs["customer_id"]))
+        start = time.perf_counter()
+        try:
+            run = run_resolver_agent(llm, tools, system_prompt, build_user_prompt(line, resolution))
+        except AllProvidersFailed:
+            run = None  # scored as providers_failed: the verdict says RERUN
+        return run_facts(run, time.perf_counter() - start)
+
+    return resolver_agent_case
+
+
+# ---------- evaluators: resolver_metrics, in LangSmith's format ----------
+
+
+def case_scores(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
+    scores = score_case(inputs, outputs, reference_outputs, CATALOGUE)
+    return {"results": [{"key": key, "score": value} for key, value in scores.items()]}
+
+
+def experiment_summary(inputs: list[dict], outputs: list[dict], reference_outputs: list[dict]) -> dict:
+    summary = summarize([score_case(i, o, r, CATALOGUE) for i, o, r in zip(inputs, outputs, reference_outputs)])
+    return {"results": [
+        {"key": key, "value": value} if isinstance(value, str) else {"key": key, "score": value}
+        for key, value in summary.items() if value is not None
+    ]}
+
+
+# ---------- main ----------
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    first = f"{PROVIDER_CHAIN[0][0]}:{PROVIDER_CHAIN[0][1]}"
+    parser.add_argument("--model", default=first, help="provider:model, one model per experiment (no fallback)")
+    parser.add_argument("--only", help="comma-separated case ids")
+    args = parser.parse_args()
+
+    load_dotenv(Path(__file__).parents[1] / ".env")
+    os.environ["LANGSMITH_TRACING"] = "true"  # an experiment is traced, whatever .env says
+
+    provider, model = args.model.split(":", 1)
+    llm = make_fallback_chat([(provider, model)])
+    system_prompt = build_system_prompt(ONDYNA_PROFILE, MAX_MODEL_CALLS)
+    cases = load_cases()
+    for case in cases:  # fail fast on a broken case, before spending any LLM call
+        starting_point(case["input"])
+
+    client = Client()
+    dataset = upload_dataset(client, cases)  # always the whole file: --only picks examples from it
+    only = set(args.only.split(",")) if args.only else None
+    examples = [e for e in client.list_examples(dataset_name=dataset) if not only or e.metadata["case"] in only]
+    results = client.evaluate(
+        make_target(llm, system_prompt),
+        data=examples,
+        evaluators=[case_scores],
+        summary_evaluators=[experiment_summary],
+        experiment_prefix=f"resolver-{model.split('/')[-1]}",
+        metadata={"model": args.model, "max_model_calls": MAX_MODEL_CALLS,
+                  "prompt": hashlib.sha256(system_prompt.encode()).hexdigest()[:8]},
+        max_concurrency=0,  # one case at a time: free tiers limit requests per minute
+    )
+    rows = [row for row in results if row["run"].outputs]  # a crashed case has no outputs: its trace shows why
+    summary = summarize([score_case(row["example"].inputs, row["run"].outputs, row["example"].outputs, CATALOGUE)
+                         for row in rows])
+    print(f"\nexperiment {results.experiment_name}: {len(rows)} cases scored, open it in LangSmith for the traces")
+    for key, value in summary.items():
+        print(f"  {key:<20} {value}")
+
+
+if __name__ == "__main__":
+    main()

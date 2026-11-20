@@ -4,7 +4,8 @@ import itertools
 
 from langchain_core.messages import AIMessage, ToolMessage
 
-from orderdesk.agents.resolver_agent import MAX_MODEL_CALLS
+from orderdesk.agents.resolver_agent import MAX_MODEL_CALLS, TOOL_FAILED, AgentRun, run_resolver_agent
+from orderdesk.agents.resolver_tools import make_resolver_tools
 from orderdesk.catalogue.memory import MemoryCatalogue
 from orderdesk.domain.catalogue import Customer
 from orderdesk.domain.classification import EmailClassification
@@ -156,3 +157,51 @@ def test_an_unknown_sender_gets_no_history_tool() -> None:
     assert "find_past_orders" not in agent.bound
     assert result.evidence == "proposal rejected: the agent found nothing"
 
+
+
+# ---------- the loop alone: what the evals read ----------
+
+
+def run_agent(*answers) -> AgentRun:
+    return run_resolver_agent(FakeAgentLLM(*answers), make_resolver_tools(CATALOGUE, CATALOGUE, BAINS), "system", "line")
+
+
+def test_the_conversation_is_kept_when_the_limit_is_hit() -> None:
+    run = run_agent(call("search_catalogue", text="cartouche"))
+
+    assert (run.proposal, run.stop_reason) == (None, "call_limit")
+    assert sum(isinstance(m, ToolMessage) for m in run.messages) == MAX_MODEL_CALLS  # not only the 2 start messages
+
+
+def test_the_proposal_is_returned_unchecked() -> None:
+    run = run_agent(answer("CAR-99"))
+
+    assert (run.stop_reason, run.proposal.code) == ("answered", "CAR-99")  # check_proposal is the caller's job
+
+
+class BrokenErp:
+    """The ERP times out on history, everything else works."""
+
+    def __getattr__(self, name):
+        return getattr(CATALOGUE, name)
+
+    def past_orders(self, customer_id, limit):
+        raise ConnectionError("ERP timeout on host erp.internal")
+
+
+def test_a_failing_tool_is_an_answer_not_a_crash() -> None:
+    agent = FakeAgentLLM(call("find_past_orders"), answer("NONE", "none", None))
+
+    result = agent_line(agent, "system", SAME_AS_LAST_TIME, previous_order_line(), BAINS, BrokenErp(), CATALOGUE)
+
+    reply = agent.llm.calls[1][-1]
+    assert (reply.status, reply.content) == ("error", TOOL_FAILED)  # no internal details in the prompt
+    assert (result.reason, result.next_step) == ("agent_failed", "human")
+
+
+def test_an_answer_on_the_last_allowed_call_is_kept() -> None:
+    searches = [call("search_catalogue", text=f"try {i}") for i in range(MAX_MODEL_CALLS - 1)]
+
+    run = run_agent(*searches, answer("CAR-35"))
+
+    assert (run.stop_reason, run.proposal.code) == ("answered", "CAR-35")

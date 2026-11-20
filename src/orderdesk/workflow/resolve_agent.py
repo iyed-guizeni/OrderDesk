@@ -24,6 +24,11 @@ from orderdesk.workflow.state import WorkflowState
 
 log = logging.getLogger(__name__)
 
+NO_ANSWER = {  # shown to the reviewer when the agent gave no proposal
+    "no_proposal": "the agent stopped without calling AgentProposal",
+    "call_limit": f"no answer after {MAX_MODEL_CALLS} model calls",
+}
+
 
 def agent_tracing() -> bool | None:
     """RESOLVER_AGENT_TRACING=true traces the agent even when LANGSMITH_TRACING is off for the rest of the workflow.
@@ -55,19 +60,19 @@ def agent_line(
     tools = make_resolver_tools(erp, search, customer)  # built here, per line: never bound to another customer
     metadata = {**(metadata or {}), "line_index": resolution.line_index, "reason": resolution.reason}
     try:
-        proposal, why = run_resolver_agent(llm, tools, system_prompt, build_user_prompt(line, resolution), metadata)
+        run = run_resolver_agent(llm, tools, system_prompt, build_user_prompt(line, resolution), metadata)
     except AllProvidersFailed as error:
         log.error("resolver agent could not run (line %s): %s", resolution.line_index, error)
         return _failed(resolution, "the agent could not run (LLM providers failed)")
-    if proposal is None:
-        return _failed(resolution, why or "the agent gave no answer")
+    if run.proposal is None:
+        return _failed(resolution, NO_ANSWER[run.stop_reason])
 
-    product, problem = check_proposal(proposal, resolution, erp, customer)
+    product, problem = check_proposal(run.proposal, resolution, erp, customer)
     if product is None:
         log.warning("resolver agent proposal rejected (line %s): %s", resolution.line_index, problem)
         return _failed(resolution, f"proposal rejected: {problem}")
     return LineResolution(line_index=resolution.line_index, status="resolved", product=product, method="agent",
-                          candidates=resolution.candidates, evidence=proposal.evidence, next_step="done")
+                          candidates=resolution.candidates, evidence=run.proposal.evidence, next_step="done")
 
 
 def make_resolve_agent_node(
