@@ -4,6 +4,7 @@ import pytest
 
 from evals.resolver_metrics import outcome, run_facts, score_case, summarize
 from evals.run_resolver import CATALOGUE, CUSTOMERS, FaultyCatalogue, load_cases, starting_point
+from orderdesk.resolve.ladder import next_step, resolve_line
 from tests.unit.test_resolver_agent import SAME_AS_LAST_TIME, answer, call, run_agent
 
 INPUTS = {"line": {"raw_text": SAME_AS_LAST_TIME.raw_text}, "customer_id": 2}
@@ -102,13 +103,20 @@ def test_the_verdict() -> None:
 
 
 @pytest.mark.parametrize("case", load_cases(), ids=lambda case: case["id"])
-def test_every_case_matches_the_real_ladder(case) -> None:
-    line, resolution = starting_point(case["input"])  # raises on a broken case
+def test_every_case_is_what_production_would_send_to_the_agent(case) -> None:
+    """The eval reads the cases as written; this checks them against the real ladder, so they cannot drift."""
+    inputs = case["input"]
+    line, resolution = starting_point(inputs)
+    customer = CUSTOMERS.get(inputs["customer_id"])
+    ladder = resolve_line(0, line, customer, CATALOGUE, CATALOGUE, CATALOGUE)
 
-    assert resolution.next_step == "agent"
+    # llm_said_none: the ladder found the line ambiguous, then the choice step said no candidate fits
+    assert ladder.reason == ("ambiguous" if inputs["reason"] == "llm_said_none" else inputs["reason"])
+    assert [c.product.code for c in ladder.candidates] == inputs.get("candidates", [])
+    assert next_step(inputs["reason"], customer is not None) == "agent"
     code = case["expected"]["code"]
     assert code is None or CATALOGUE.get_product(code) is not None
-    assert case["input"]["customer_id"] is None or case["input"]["customer_id"] in CUSTOMERS
+    assert resolution.reason == inputs["reason"]
 
 
 def test_a_fault_breaks_one_tool_once() -> None:

@@ -1,21 +1,22 @@
 """Does the Resolver agent find the right product, or hand the line to a person when it should?
 
-Runs the agent ALONE (not the whole graph, not the code checks after it) on the cases of evals/resolver/ondyna.jsonl, as a LangSmith
-experiment: one trace per case, the scores of resolver_metrics.py on each trace, and a summary.
+Runs the agent ALONE (not the whole graph, not the code checks after it) on the cases of
+evals/resolver/ondyna.jsonl, as a LangSmith experiment: one trace per case, the scores of resolver_metrics.py
+on each trace, and a summary.
 
     venv\\Scripts\\python -m evals.run_resolver                      # first model of the chain
     venv\\Scripts\\python -m evals.run_resolver --model gemini:gemini-3.5-flash-lite
     venv\\Scripts\\python -m evals.run_resolver --only po-01,vm-05   # a few cases while debugging
 
-Each case starts from the line Extract would give. The REAL ladder computes the reason and the candidates,
-so the agent sees exactly what production gives it; a case whose ladder reason differs is a broken case.
+Each case holds exactly what the agent receives: the line, the reason, the candidates (codes of the demo
+catalogue) and the note of the earlier step. tests/unit/test_resolver_metrics.py checks that the earlier steps
+would really send each case to the agent with these candidates.
 Synthetic data only: the traces contain the prompts and tool results.
 """
 
 import argparse
 import hashlib
 import json
-import os
 import time
 from pathlib import Path
 
@@ -26,13 +27,13 @@ from evals.resolver_metrics import run_facts, score_case, summarize
 from orderdesk.agents.resolver_agent import MAX_MODEL_CALLS, run_resolver_agent
 from orderdesk.agents.resolver_tools import make_resolver_tools
 from orderdesk.catalogue.memory import MemoryCatalogue
+from orderdesk.domain.catalogue import Candidate
 from orderdesk.domain.extraction import ExtractedLine
 from orderdesk.domain.resolution import LineResolution
 from orderdesk.llm.client import AllProvidersFailed, make_fallback_chat
 from orderdesk.profiles.demo_catalogue import DEMO_CUSTOMERS, make_demo_catalogue
 from orderdesk.profiles.ondyna import ONDYNA_PROFILE
 from orderdesk.prompts.resolver_agent import build_system_prompt, build_user_prompt
-from orderdesk.resolve.ladder import resolve_line as ladder_line
 from orderdesk.workflow.studio import PROVIDER_CHAIN
 
 CASES = Path(__file__).parent / "resolver" / "ondyna.jsonl"
@@ -43,7 +44,7 @@ CUSTOMERS = {customer.id: customer for customer in DEMO_CUSTOMERS.values()}
 # ---------- the dataset ----------
 
 
-def load_cases() -> list[dict]:
+def load_cases() -> list[dict]: 
     return [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
@@ -96,16 +97,12 @@ class FaultyCatalogue:
 
 
 def starting_point(inputs: dict) -> tuple[ExtractedLine, LineResolution]:
-    """The line, and the resolution the ladder (and for llm_said_none, the choice step) hands to the agent."""
+    """The line and the unresolved LineResolution the agent receives, read from the case as written."""
     line = ExtractedLine.model_validate(inputs["line"])
-    customer = CUSTOMERS.get(inputs["customer_id"])
-    resolution = ladder_line(0, line, customer, CATALOGUE, CATALOGUE, CATALOGUE)
-    wanted = "ambiguous" if inputs["reason"] == "llm_said_none" else inputs["reason"]
-    if resolution.reason != wanted:
-        raise ValueError(f"broken case: the ladder says {resolution.reason!r}, the case says {inputs['reason']!r}")
-    if inputs["reason"] == "llm_said_none":  # what the choice step writes when no candidate fits
-        resolution = resolution.model_copy(update={"reason": "llm_said_none", "evidence": inputs.get("earlier_note"),
-                                                   "next_step": "agent"})
+    candidates = [Candidate(product=CATALOGUE.get_product(code), score=1.0)  # the agent never sees the score
+                  for code in inputs.get("candidates", [])]
+    resolution = LineResolution(line_index=0, status="unresolved", reason=inputs["reason"], candidates=candidates,
+                                evidence=inputs.get("earlier_note"), next_step="agent")
     return line, resolution
 
 
@@ -150,8 +147,7 @@ def main() -> None:
     parser.add_argument("--only", help="comma-separated case ids")
     args = parser.parse_args()
 
-    load_dotenv(Path(__file__).parents[1] / ".env")
-    os.environ["LANGSMITH_TRACING"] = "true"  # an experiment is traced, whatever .env says
+    load_dotenv(Path(__file__).parents[1] / ".env")  # the API keys: found from any folder the script runs in
 
     provider, model = args.model.split(":", 1)
     llm = make_fallback_chat([(provider, model)])
