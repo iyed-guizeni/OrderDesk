@@ -13,6 +13,7 @@ from orderdesk.storage import LocalStorage
 from orderdesk.workflow.graph import build_graph
 
 PROVIDER_CHAIN = [
+    ("apinex", "free/kimi-k3"),
     ("nvidia", "nvidia/nemotron-3.5-super-vl-120b-a12b"),
     ("nvidia", "nvidia/nemotron-3.5-lightning-30b-a3b"),
     ("nvidia", "mistralai/mistral-large-4-1t-a52b"),  

@@ -160,6 +160,12 @@ def make_chat(provider: str, model: str) -> Any:
 
         chat = ChatOpenAI(model=model, base_url="https://integrate.api.nvidia.com/v1",
         api_key=os.environ["NVIDIA_API_KEY"], temperature=0, timeout=60, max_retries=0)
+    elif provider == "apinex":
+        import os
+        from langchain_openai import ChatOpenAI
+
+        chat = ChatOpenAI(model=model, base_url="https://api.apinex.bond/v1",
+        api_key=os.environ["APINEX_API_KEY"], temperature=0, timeout=60, max_retries=0)
     else:
         raise ValueError(f"unknown provider {provider!r}")
     return chat
