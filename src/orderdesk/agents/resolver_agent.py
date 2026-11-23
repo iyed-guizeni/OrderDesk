@@ -31,7 +31,8 @@ from orderdesk.llm.client import ChatLike, ToolBindable
 log = logging.getLogger(__name__)
 
 MAX_MODEL_CALLS = 8
-TOOL_FAILED = "This tool failed (a temporary problem on our side). You may call it once more; otherwise answer NONE."
+TOOL_FAILED = ("This tool failed (a problem on our side). Call it once more at most: "
+               "if it already failed before, it is down. Answer from the other tools, or NONE.")
 FINAL_ANSWER = AgentProposal.__name__
 
 StopReason = Literal["answered", "no_proposal", "call_limit"]

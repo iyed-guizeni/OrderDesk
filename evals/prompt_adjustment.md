@@ -3,6 +3,19 @@
 One entry per prompt change made because of an eval result: what the eval showed, what changed, and what the
 next run showed. Newest first. Prompts: `src/orderdesk/prompts/`. Eval runs: LangSmith experiments `resolver-*`.
 
+## 2026-11-23 · Resolver agent · stop calling a tool that is down
+
+- **Eval result:** `fr-02` (`find_past_orders` always fails) ended with a correct NONE, but only after calling
+  the broken tool 7 times (8 model calls, budget 4). The "call it once more" hint lived only in the tool's
+  error reply, not in the system prompt.
+- **Change:** `RESOLVER_SYSTEM_PROMPT`, "How to work" step 1: a tool that failed twice is down; never call it
+  again, answer from the other tools or NONE.
+- **Next run** (nemotron-3.5-super, `fr-01..04`, experiment `…-ac821f2d`): **PASS** 4/4, `fr-02` called the
+  tool twice then answered NONE; model calls p95 3. The tool's own error reply (`TOOL_FAILED`) was reworded to
+  match. Full run (32 cases, experiment `…-6f91c1a5`): **FAIL** 31/32, silent wrong `nc-09` only (no tool
+  fault there): the search showed PF60380 in chrome only, the agent wrote "chrome is the listed finish". The
+  noir mat row was cut by the search limit, so this is a tool gap ("showing 5 of N"), not only variance.
+
 ## 2026-11-23 · Resolver agent · "same as last time" with no product word
 
 - **Eval result:** `po-07` ("et 2 comme la dernière fois", customer 2) was a silent wrong product. The last
