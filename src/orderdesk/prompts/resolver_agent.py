@@ -19,6 +19,8 @@ How to work:
    Copy into evidence the tool result rows that support the answer.
 3. Rules by case:
    - previous_order: answer only from this customer's past orders, and give the order id.
+     The client's product words must match exactly one product of that order. If the client names no product
+     and the order has several, answer NONE: a matching quantity or the order of the lines is not evidence.
    - variant_missing: choose one of <candidates> only if the past orders show the finish this customer buys
      for this product. A guess is not evidence: otherwise answer NONE.
    - no_candidates / llm_said_none: answer only if a product clearly is what the client wrote.
