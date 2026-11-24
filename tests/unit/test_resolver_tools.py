@@ -7,6 +7,7 @@ from orderdesk.agents.resolver_checks import check_proposal
 from orderdesk.agents.resolver_tools import MAX_PAST_ORDERS, make_resolver_tools
 from orderdesk.catalogue.memory import MemoryCatalogue
 from orderdesk.domain.catalogue import Candidate, Customer, PastOrder, PastOrderLine, Product
+from orderdesk.domain.extraction import ExtractedLine
 from orderdesk.domain.resolution import AgentProposal, LineResolution
 
 ME = Customer(id=1, name="Bains & Co")
@@ -77,13 +78,25 @@ def test_problems_come_back_as_guidance_not_errors() -> None:
     assert tools["search_catalogue"].invoke({"text": "receveur"}).startswith("No product matches 'receveur'.")
 
 
-def test_search_returns_one_product_per_line() -> None:
-    rows = tools_for(ME)["search_catalogue"].invoke({"text": "colonne thermostatique"}).splitlines()
+def test_search_shows_a_product_with_one_finish_as_one_row() -> None:
+    assert tools_for(ME)["search_catalogue"].invoke({"text": "cartouche"}) == (
+        "CAR-35 | Cartouche céramique 35 mm | no finish | sold by piece | active"
+    )
 
-    assert sorted(rows) == [
-        "PH60251 | Colonne thermostatique | chrome | sold by piece | active",
-        "PH60252 | Colonne thermostatique | noir mat | sold by piece | active",
-    ]
+
+def test_search_shows_all_the_finishes_of_a_product_on_one_row() -> None:
+    """nc-09: with one row per code, a cut list showed the bath tap in chrome only."""
+    assert tools_for(ME)["search_catalogue"].invoke({"text": "colonne thermostatique"}) == (
+        "Colonne thermostatique | sold by piece | 2 finishes: chrome=PH60251, noir mat=PH60252"
+    )
+
+
+def test_search_says_when_products_were_cut() -> None:
+    products = [Product(code=f"M{i}", name=f"Mitigeur {i}", family=f"Mitigeur {i}") for i in range(7)]
+    search = MemoryCatalogue(products)
+    rows = make_resolver_tools(search, search, None)[0].invoke({"text": "mitigeur"}).splitlines()
+
+    assert len(rows) == 6 and rows[-1] == "(showing 5 of 7 products: add words to narrow the search)"
 
 
 # ---------- the checks on the final answer ----------
@@ -98,51 +111,86 @@ def proposal(code: str, source: str = "catalogue", order_id: str | None = None) 
     return AgentProposal(evidence="(evidence)", source=source, source_order_id=order_id, code=code)
 
 
-def test_a_proposal_backed_by_a_real_past_order_is_accepted() -> None:
-    product, problem = check_proposal(proposal("CAR-35", "past_order", "SO-101"), unresolved("previous_order"),
-                                      CATALOGUE, ME)
+def written(raw: str, text: str | None = "colonne", code: str | None = None) -> ExtractedLine:
+    kind = "named" if text or code else "previous_order"
+    return ExtractedLine.model_validate({"raw_text": raw, "product": {"kind": kind, "text": text,
+                                                                      "code_as_written": code}})
 
-    assert (product, problem) == (CARTRIDGE, None)
+
+NAMED = written("2 colonnes thermostatiques")
+
+
+def check(answer: AgentProposal, resolution: LineResolution, line: ExtractedLine = NAMED):
+    return check_proposal(answer, line, resolution, CATALOGUE, ME)
+
+
+def test_a_proposal_backed_by_a_real_past_order_is_accepted() -> None:
+    assert check(proposal("CAR-35", "past_order", "SO-101"), unresolved("previous_order")) == (CARTRIDGE, None)
 
 
 def test_none_is_rejected() -> None:
-    assert check_proposal(proposal("NONE", "none"), unresolved("no_candidates"), CATALOGUE, ME)[0] is None
+    assert check(proposal("NONE", "none"), unresolved("no_candidates"))[0] is None
 
 
 def test_an_invented_code_is_rejected() -> None:
-    _, problem = check_proposal(proposal("CAR-99"), unresolved("no_candidates"), CATALOGUE, ME)
-
-    assert problem == "code 'CAR-99' does not exist"
+    assert check(proposal("CAR-99"), unresolved("no_candidates"))[1] == "code 'CAR-99' does not exist"
 
 
 def test_an_order_of_another_customer_is_rejected() -> None:
-    _, problem = check_proposal(proposal("PH60251", "past_order", "SO-999"), unresolved("previous_order"),
-                                CATALOGUE, ME)
+    _, problem = check(proposal("PH60251", "past_order", "SO-999"), unresolved("previous_order"))
 
     assert problem == "order 'SO-999' is not a confirmed order of this customer"
 
 
 def test_an_order_that_does_not_contain_the_product_is_rejected() -> None:
-    _, problem = check_proposal(proposal("PH60251", "past_order", "SO-101"), unresolved("previous_order"),
-                                CATALOGUE, ME)
+    _, problem = check(proposal("PH60251", "past_order", "SO-101"), unresolved("previous_order"))
 
     assert problem == "order SO-101 does not contain PH60251"
 
 
 def test_same_as_last_time_must_come_from_a_past_order() -> None:
-    _, problem = check_proposal(proposal("CAR-35"), unresolved("previous_order"), CATALOGUE, ME)
+    _, problem = check(proposal("CAR-35"), unresolved("previous_order"))
 
     assert problem == "'same as last time' must be answered from a past order"
 
 
+def test_same_as_last_time_with_no_product_word_needs_a_one_product_order() -> None:
+    """po-07: "et 2 comme la dernière fois", the last order has two products: picking one is a guess."""
+    two_products = MemoryCatalogue([CARTRIDGE, BLACK], past_orders={ME.id: [order("SO-300", 1, CARTRIDGE, BLACK)]})
+    no_word = written("et 2 comme la dernière fois", text=None)
+
+    _, problem = check_proposal(proposal("CAR-35", "past_order", "SO-300"), no_word, unresolved("previous_order"),
+                                two_products, ME)
+    product, _ = check(proposal("CAR-35", "past_order", "SO-101"), unresolved("previous_order"), no_word)
+
+    assert problem == "the client names no product and order SO-300 has 2"
+    assert product == CARTRIDGE  # SO-101 holds one product only
+
+
 def test_a_missing_finish_must_be_one_of_the_searched_finishes() -> None:
-    _, problem = check_proposal(proposal("CAR-35"), unresolved("variant_missing", CHROME, BLACK), CATALOGUE, ME)
+    _, problem = check(proposal("CAR-35"), unresolved("variant_missing", CHROME, BLACK))
 
     assert problem == "CAR-35 is not one of the finishes found by the search"
 
 
+def test_a_missing_finish_must_come_from_a_past_order() -> None:
+    _, problem = check(proposal("PH60252"), unresolved("variant_missing", CHROME, BLACK))
+
+    assert problem == "a finish the client did not write must come from this customer's past orders"
+
+
 def test_a_usual_finish_from_history_is_accepted() -> None:
-    product, _ = check_proposal(proposal("PH60252", "past_order", "SO-200"),
-                                unresolved("variant_missing", CHROME, BLACK), CATALOGUE, ME)
+    product, _ = check(proposal("PH60252", "past_order", "SO-200"), unresolved("variant_missing", CHROME, BLACK))
 
     assert product == BLACK
+
+
+def test_a_code_other_than_the_one_written_needs_a_past_order() -> None:
+    """nc-08: the client wrote PF6037, the agent completed it to an existing code by itself."""
+    typo = written("2 x PH6252", text=None, code="PH6252")
+
+    _, problem = check(proposal("PH60252"), unresolved("no_candidates"), typo)
+    product, _ = check(proposal("PH60252", "past_order", "SO-200"), unresolved("no_candidates"), typo)
+
+    assert problem == "the client wrote 'PH6252': a different code needs a past order as evidence"
+    assert product == BLACK  # nc-06: the right code is in this customer's history

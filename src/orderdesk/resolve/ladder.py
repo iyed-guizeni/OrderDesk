@@ -19,7 +19,8 @@ MIN_SCORE = 0.5  # below this, a candidate is not a real match
 MIN_GAP = 0.15  # the best candidate must beat the second by this much to be a clear winner
 
 AGENT_REASONS: set[Reason] = {"no_candidates"}  # the agent can try other wordings in the catalogue
-AGENT_REASONS_WITH_CUSTOMER: set[Reason] = {"previous_order", "variant_missing", "llm_said_none"}  # need history
+# need history. llm_said_none was kept on eval evidence: ls-01..04 of evals/resolver pass (2026-11-23).
+AGENT_REASONS_WITH_CUSTOMER: set[Reason] = {"previous_order", "variant_missing", "llm_said_none"}
 
 
 def next_step(reason: Reason, customer_known: bool) -> NextStep:

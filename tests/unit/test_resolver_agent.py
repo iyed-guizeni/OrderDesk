@@ -22,7 +22,7 @@ BAINS = Customer(id=2, name="Bains & Co")  # in the demo history: SO-2291 has CA
 CATALOGUE = MemoryCatalogue(DEMO_PRODUCTS, {"contact@bains-and-co.example": BAINS}, past_orders=DEMO_PAST_ORDERS)
 SAME_AS_LAST_TIME = ExtractedLine(
     raw_text="4 cartouches comme la dernière fois", quantity=4,
-    product=ProductInfo(kind="previous_order", reference_text="comme la dernière fois"),
+    product=ProductInfo(kind="previous_order", text="cartouches", reference_text="comme la dernière fois"),
 )
 _ids = itertools.count()
 

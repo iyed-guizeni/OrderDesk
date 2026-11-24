@@ -3,7 +3,7 @@
 import pytest
 
 from evals.resolver_metrics import outcome, run_facts, score_case, summarize
-from evals.run_resolver import CATALOGUE, CUSTOMERS, FaultyCatalogue, load_cases, starting_point
+from evals.run_resolver import CATALOGUE, CUSTOMERS, REPEAT_CASES, FaultyCatalogue, load_cases, starting_point
 from orderdesk.resolve.ladder import next_step, resolve_line
 from tests.unit.test_resolver_agent import SAME_AS_LAST_TIME, answer, call, run_agent
 
@@ -126,3 +126,7 @@ def test_a_fault_breaks_one_tool_once() -> None:
         faulty.past_orders(2, 3)
     assert faulty.past_orders(2, 3)  # works the second time
     assert faulty.get_product("CAR-35")  # the other methods are untouched
+
+
+def test_the_repeated_cases_exist() -> None:
+    assert set(REPEAT_CASES) <= {case["id"] for case in load_cases()}

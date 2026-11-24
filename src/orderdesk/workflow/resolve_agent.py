@@ -67,7 +67,7 @@ def agent_line(
     if run.proposal is None:
         return _failed(resolution, NO_ANSWER[run.stop_reason])
 
-    product, problem = check_proposal(run.proposal, resolution, erp, customer)
+    product, problem = check_proposal(run.proposal, line, resolution, erp, customer)
     if product is None:
         log.warning("resolver agent proposal rejected (line %s): %s", resolution.line_index, problem)
         return _failed(resolution, f"proposal rejected: {problem}")

@@ -20,6 +20,20 @@ class _Model(BaseModel):
     model_config = ConfigDict(extra="forbid")  # the LLM may not add fields of its own
 
 
+_EMPTY_WORDS = {"", "none", "null", "n/a", "na", "-"}
+
+
+def _empty_to_none(value: Any) -> Any:
+    """Some models write the WORD "None" instead of leaving a field empty: a PO "None" or a code "null"
+    would then be searched for, and flagged by grounding as not in the email."""
+    if isinstance(value, str) and value.strip().lower() in _EMPTY_WORDS:
+        return None
+    return value
+
+
+Text = Annotated[str | None, BeforeValidator(_empty_to_none)]  # an optional text the LLM fills
+
+
 class ProductInfo(_Model):
     kind: Literal["named", "previous_order", "missing"] = Field(
         description=(
@@ -29,19 +43,19 @@ class ProductInfo(_Model):
             "missing: no product AND no reference ('et 10 boîtes aussi')."
         )
     )
-    text: str | None = Field(
+    text: Text = Field(
         None,
         description="Product words exactly as written, without quantity or variant. Never translate or complete.",
     )
-    variant_text: str | None = Field(
+    variant_text: Text = Field(
         None,
         description="Finish, colour, size or model option exactly as written ('noir brossé', 'chrome', 'M8x40').",
     )
-    code_as_written: str | None = Field(
+    code_as_written: Text = Field(
         None,
         description="A product reference ONLY if the client wrote one (e.g. 'PF60375'). Never invent one.",
     )
-    reference_text: str | None = Field(
+    reference_text: Text = Field(
         None,
         description="When kind is previous_order: the client's exact words that point to the earlier order.",
     )
@@ -70,7 +84,7 @@ class ExtractedLine(_Model):
         None,
         description="A unit price ONLY if the client wrote one for this line. Never use prices you know.",
     )
-    note: str | None = Field(
+    note: Text = Field(
         None, description="A condition the client set on this line ('livrer séparément'). Not the product."
     )
     source: Literal["body", "attachment"] = Field(
@@ -86,7 +100,7 @@ class Delivery(_Model):
             "pickup: the client comes to collect ('on passe récupérer', 'retrait au comptoir')."
         )
     )
-    text: str | None = Field(None, description="The delivery words exactly as written.")
+    text: Text = Field(None, description="The delivery words exactly as written.")
 
 
 def _date_from_parts(value: Any) -> Any:
@@ -120,19 +134,19 @@ class OrderReference(_Model):
 
 
 class ExtractedOrder(_Model):
-    po_number: str | None = Field(
+    po_number: Text = Field(
         None,
         description=(
             "The client's own order reference (bon de commande, BC, PO, 'notre commande n°'). "
             "Not an invoice number, not a phone number, not one of OUR quotation or order numbers."
         ),
     )
-    customer_name_as_written: str | None = Field(
+    customer_name_as_written: Text = Field(
         None, description="The client's company name as written, usually in the signature or the attachment."
     )
-    contact_name: str | None = Field(None, description="The name of the person who wrote the email.")
-    delivery: Delivery | None = None
-    requested_date: RequestedDate | None = None
+    contact_name: Text = Field(None, description="The name of the person who wrote the email.")
+    delivery: Annotated[Delivery | None, BeforeValidator(_empty_to_none)] = None
+    requested_date: Annotated[RequestedDate | None, BeforeValidator(_empty_to_none)] = None
     notes: list[str] = Field(
         default_factory=list,
         description="Short instructions for the whole order that fit no other field ('livrer avant 8h').",
@@ -141,7 +155,7 @@ class ExtractedOrder(_Model):
         False,
         description="true if the text says a file is attached ('ci-joint', 'en pièce jointe', 'please find attached').",
     )
-    order_reference: OrderReference | None = Field(
+    order_reference: Annotated[OrderReference | None, BeforeValidator(_empty_to_none)] = Field(
         None, description="Only when the client asks to repeat a WHOLE earlier order instead of listing lines."
     )
     lines: list[ExtractedLine] = Field(
