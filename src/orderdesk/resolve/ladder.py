@@ -36,7 +36,8 @@ def _unresolved(index: int, reason: Reason, customer: Customer | None, candidate
                           next_step=next_step(reason, customer is not None))
 
 
-def _words(line: ExtractedLine) -> str:
+def alias_words(line: ExtractedLine) -> str:
+    """The words an alias is stored and looked up under (product + variant text); the store normalises them."""
     return " ".join(part for part in (line.product.text, line.product.variant_text) if part)
 
 
@@ -50,7 +51,7 @@ def resolve_line(
     if product.kind == "previous_order":
         return _unresolved(index, "previous_order", customer)
 
-    words = _words(line)
+    words = alias_words(line)
     if customer is not None and words:
         code = aliases.find_alias(customer.id, words)
         found = erp.get_product(code) if code else None

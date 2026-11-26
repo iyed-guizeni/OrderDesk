@@ -7,8 +7,10 @@ from orderdesk.catalogue.ports import ErpPort
 from orderdesk.domain.catalogue import Product
 from orderdesk.domain.draft import DraftLine, DraftOrder, LineIssue, OrderIssue
 from orderdesk.domain.extraction import ExtractedLine, ExtractedOrder
+from orderdesk.domain.quotation import QuotationLine, QuotationRequest, orderdesk_origin
 from orderdesk.domain.resolution import LineResolution, ResolvedOrder
 from orderdesk.domain.review import ReviewDecision
+from orderdesk.resolve.ladder import alias_words
 
 
 def draft_line(extracted: ExtractedLine, resolution: LineResolution, evidence: str | None = None) -> DraftLine:
@@ -168,3 +170,42 @@ def apply_decision(draft: DraftOrder, decision: ReviewDecision, erp: ErpPort) ->
         total=total,
     )
     return approved, []
+
+
+def to_quotation_request(approved: DraftOrder, tenant_id: int, email_id: int) -> QuotationRequest:
+    """Convert an approved draft to a complete, writable ERP quotation request."""
+    if approved.customer_id is None:
+        raise ValueError("an approved draft needs a customer")
+
+    lines: list[QuotationLine] = []
+    for line in approved.lines:
+        if line.product is None:
+            raise ValueError(f"approved line {line.line_index} has no product")
+        if line.quantity is None:
+            raise ValueError(f"approved line {line.line_index} has no quantity")
+        lines.append(
+            QuotationLine(code=line.product.code, quantity=line.quantity, unit_price=line.unit_price)
+        )
+
+    return QuotationRequest(
+        origin=orderdesk_origin(tenant_id, email_id),
+        customer_id=approved.customer_id,
+        client_ref=approved.po_number,
+        lines=lines,
+    )
+
+
+def aliases_to_learn(approved: DraftOrder, extracted: ExtractedOrder) -> list[tuple[str, str]]:
+    """Return customer wording and reviewer-approved product-code pairs that are safe to learn."""
+    approved_by_index = {line.line_index: line for line in approved.lines}
+    pairs: list[tuple[str, str]] = []
+    for line_index, extracted_line in enumerate(extracted.lines):
+        approved_line = approved_by_index.get(line_index)
+        if approved_line is None or approved_line.product is None:
+            continue
+        if extracted_line.product.kind != "named" or extracted_line.product.code_as_written:
+            continue
+        words = alias_words(extracted_line)
+        if words:
+            pairs.append((words, approved_line.product.code))
+    return pairs

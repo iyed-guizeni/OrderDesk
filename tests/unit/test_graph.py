@@ -47,6 +47,8 @@ def make_graph(
         CATALOGUE,
         CATALOGUE,
         CATALOGUE,
+        CATALOGUE,
+        CATALOGUE,
         checkpointer=InMemorySaver(),
     )
 

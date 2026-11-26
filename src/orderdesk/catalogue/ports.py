@@ -3,6 +3,7 @@
 from typing import Protocol
 
 from orderdesk.domain.catalogue import Candidate, Customer, PastOrder, Product
+from orderdesk.domain.quotation import AliasOutcome, QuotationRequest
 
 
 class ErpPort(Protocol):
@@ -38,4 +39,23 @@ class ProductSearch(Protocol):
 class AliasStore(Protocol):
     def find_alias(self, customer_id: int, text: str) -> str | None:
         """The product code a person already approved for these words from this customer, or None."""
+        ...
+
+
+class ErpWriter(Protocol):
+    """The ONLY way OrderDesk writes to the ERP. Given to the write_draft node alone, never to an agent."""
+
+    def create_draft_quotation(self, request: QuotationRequest) -> str:
+        """Create a DRAFT quotation (never a confirmed order) and return its ERP id.
+        Idempotent: if a quotation with this origin already exists, return its id and create nothing."""
+        ...
+
+
+class AliasWriter(Protocol):
+    """Remembers a person's approval. Given to the learn node alone."""
+
+    def learn_alias(self, customer_id: int, text: str, code: str) -> AliasOutcome:
+        """A person approved this product for these words; the text is normalised like find_alias's.
+        No alias yet -> store it ("learned"). Same code -> nothing ("unchanged").
+        ANOTHER code -> DELETE the alias ("forgotten"): unclear words go back to search, never to a guess."""
         ...

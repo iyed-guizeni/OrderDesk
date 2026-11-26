@@ -69,6 +69,7 @@ The Postgres checkpointer, the worker, the review script and LangSmith feedback 
 
 ```python
 ORIGIN_PREFIX = "OrderDesk"
+AliasOutcome = Literal["learned", "unchanged", "forgotten"]
 
 def orderdesk_origin(tenant_id: int, email_id: int) -> str:
     """'OrderDesk 999-42': the same email always gives the same origin. That is what makes the write idempotent."""
@@ -99,9 +100,13 @@ class ErpWriter(Protocol):
 class AliasWriter(Protocol):
     """Remembers a person's approval. Given to the learn node alone."""
 
-    def learn_alias(self, customer_id: int, text: str, code: str) -> None:
-        """This customer's words now mean this product. The text is normalised like find_alias's.
-        The latest approval wins."""
+    def learn_alias(self, customer_id: int, text: str, code: str) -> AliasOutcome:
+        """A person approved this product for these words. The text is normalised like find_alias's.
+        - no alias yet for these words          -> store it, return "learned"
+        - the same code is already stored        -> change nothing, return "unchanged"
+        - ANOTHER code is stored (a conflict)    -> DELETE the alias, return "forgotten"
+        Words that meant two products are unclear: they go back to the normal search and choice steps, never an
+        automatic (possibly wrong) product."""
         ...
 ```
 
@@ -126,7 +131,9 @@ class AliasWriter(Protocol):
 4. A draft never shows up in `past_orders` or `get_order`.
 5. After `learn_alias(2, "Robinet  Profilo NOIR", "PF60376")`, `find_alias(2, "robinet profilo noir")` returns
    `"PF60376"`. Another customer gets None.
-6. The latest approval wins: learning the same words with another code replaces the first one.
+6. **Conflict → forget:** after the same words are learned with a second, different code, `find_alias` returns
+   None and the outcome is `"forgotten"`. Learning the same code again gives `"unchanged"`. A new alias gives
+   `"learned"`.
 7. `QuotationRequest` refuses an empty line list, and `QuotationLine` refuses `quantity=0`.
 
 ---
@@ -188,19 +195,24 @@ The rules, from §2.6 and ADR 29:
   - raises `ValueError` without `approved_order` or `extracted_order`;
   - does nothing when `approved_order.customer_id` is None;
   - calls `learn_alias(customer_id, words, code)` for each pair;
-  - returns `{"learned_aliases": len(pairs)}`.
-- `WorkflowState`: add `learned_aliases: int = 0`.
-- A line the reviewer **corrected** is learned with the reviewer's product. That is the most valuable case: the
-  next email resolves correctly with no LLM.
+  - returns `{"learned_aliases": <number of "learned">, "forgotten_aliases": <number of "forgotten">}`;
+  - logs one line with both counts (`tenant_id` and `email_id`, no words).
+- `WorkflowState`: add `learned_aliases: int = 0` and `forgotten_aliases: int = 0`.
+- A line the reviewer **corrected** is passed with the reviewer's product:
+  - If its words had no alias, it's learned, and the next email resolves correctly with no LLM.
+  - If its words pointed to another product, which is the usual case for a correction after the alias step, the
+    alias is **forgotten**. Those words are unclear, so a person or the choice step decides next time.
 
 **Tests** (new `tests/unit/test_learn.py`):
 1. A `named` line with words is learned as `(alias_words(line), code)`.
 2. `previous_order`, `missing` and code-only lines (`code_as_written` set) are not learned.
 3. A line removed at review is not learned.
-4. A corrected line is learned with the **reviewer's** product.
-5. **The loop closes:** after the learn node runs on a `MemoryCatalogue`, `resolve_line` on the same words for the
+4. A corrected line is learned with the **reviewer's** product when its words had no alias.
+5. A corrected line whose words already had an alias to **another** product → the alias is gone,
+   `forgotten_aliases == 1`, and the next `resolve_line` on those words does **not** use `method="alias"`.
+6. **The loop closes:** after the learn node runs on a `MemoryCatalogue`, `resolve_line` on the same words for the
    same customer resolves with `method="alias"`.
-6. An unknown customer (`customer_id=None`) learns nothing and doesn't fail.
+7. An unknown customer (`customer_id=None`) learns nothing and doesn't fail.
 
 ---
 
@@ -230,7 +242,7 @@ The rules, from §2.6 and ADR 29:
       `make_email()` defaults). The result has `erp_quotation_id`.
    2. Reject → `draft_quotations` is empty and `learned_aliases` is 0.
    3. **Nothing is written before the approval:** at the pause, `draft_quotations` is empty.
-   4. Approve with a correction on a `named` line → the next resolve of the same words for that customer gives
+   4. Approve with a correction on a `named` line whose words had **no alias yet** → the next resolve of the same words for that customer gives
       `method="alias"` with the corrected product. This is the loop, from start to end.
 
 ---
@@ -248,6 +260,8 @@ The rules, from §2.6 and ADR 29:
 - [ ] The same email approved twice, or a retried node, gives one quotation.
 - [ ] Learning follows the §2.6 rules exactly (`named` only, no codes, no removed lines), and it uses the ladder's
       own `alias_words`.
+- [ ] A conflict never leaves an automatic product: the same words approved with two different products are
+      forgotten, never overwritten.
 - [ ] Drafts never appear in `past_orders` or `get_order`.
 - [ ] `studio.py` changes only by the two new arguments. `run_e2e.py` changes only by the two new arguments.
 

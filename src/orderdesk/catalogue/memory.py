@@ -1,11 +1,16 @@
-"""A catalogue held in memory: tests, LangGraph Studio and demo sandboxes. Implements ErpPort, ProductSearch
-and AliasStore. The real ones (Odoo adapter, Postgres full-text + pgvector search) keep the same methods.
+"""A catalogue held in memory: tests, Studio and demo sandboxes.
+
+It implements ErpPort, ErpWriter, ProductSearch, AliasStore and AliasWriter. The real ones (Odoo adapter,
+Postgres full-text + pgvector search, the product_synonyms table) keep the same methods.
 """
 
 from collections.abc import Iterable, Mapping
 
 from orderdesk.catalogue.text import code_key, normalize, tokens
 from orderdesk.domain.catalogue import Candidate, Customer, PastOrder, Product
+from orderdesk.domain.quotation import AliasOutcome, QuotationRequest
+
+DRAFT_PREFIX = "DRAFT"
 
 
 class MemoryCatalogue:
@@ -23,6 +28,8 @@ class MemoryCatalogue:
             cid: sorted(orders, key=lambda o: o.date, reverse=True) for cid, orders in (past_orders or {}).items()
         }
         self._tokens = {key: tokens(f"{p.code} {p.name} {p.finish or ''}") for key, p in self._products.items()}
+        self._draft_ids_by_origin: dict[str, str] = {}
+        self._draft_quotations: dict[str, QuotationRequest] = {}
 
     def find_customer(self, email: str) -> Customer | None:
         return self._customers.get(email.strip().lower())
@@ -62,3 +69,28 @@ class MemoryCatalogue:
 
     def find_alias(self, customer_id: int, text: str) -> str | None:
         return self._aliases.get((customer_id, normalize(text)))
+
+    @property
+    def draft_quotations(self) -> dict[str, QuotationRequest]:
+        return dict(self._draft_quotations)
+
+    def create_draft_quotation(self, request: QuotationRequest) -> str:
+        existing = self._draft_ids_by_origin.get(request.origin)
+        if existing is not None:
+            return existing
+
+        quotation_id = f"{DRAFT_PREFIX}-{len(self._draft_quotations) + 1:04d}"
+        self._draft_ids_by_origin[request.origin] = quotation_id
+        self._draft_quotations[quotation_id] = request
+        return quotation_id
+
+    def learn_alias(self, customer_id: int, text: str, code: str) -> AliasOutcome:
+        key = (customer_id, normalize(text))
+        existing = self._aliases.get(key)
+        if existing is None:
+            self._aliases[key] = code
+            return "learned"
+        if existing == code:
+            return "unchanged"
+        del self._aliases[key]
+        return "forgotten"

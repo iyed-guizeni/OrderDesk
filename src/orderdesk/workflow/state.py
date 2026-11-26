@@ -18,3 +18,6 @@ class WorkflowState(BaseModel):
     draft_order: DraftOrder | None = None
     review_decision: ReviewDecision | None = None
     approved_order: DraftOrder | None = None
+    erp_quotation_id: str | None = None
+    learned_aliases: int = 0
+    forgotten_aliases: int = 0

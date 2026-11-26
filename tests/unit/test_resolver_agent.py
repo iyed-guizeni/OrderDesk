@@ -3,6 +3,7 @@
 import itertools
 
 from langchain_core.messages import AIMessage, ToolMessage
+from langgraph.checkpoint.memory import InMemorySaver
 
 from orderdesk.agents.resolver_agent import MAX_MODEL_CALLS, TOOL_FAILED, AgentRun, run_resolver_agent
 from orderdesk.agents.resolver_tools import make_resolver_tools
@@ -139,10 +140,25 @@ def test_the_graph_sends_agent_lines_to_the_agent() -> None:
     classify = FakeLLM(EmailClassification(evidence="commande", label="new_order", confidence="high"))
     extract = FakeLLM(ExtractedOrder(lines=[SAME_AS_LAST_TIME]))
     agent = FakeAgentLLM(call("find_past_orders"), answer("CAR-35"))
-    graph = build_graph(classify, extract, FakeLLM(None), agent, "profile", FakeStorage(), CATALOGUE, CATALOGUE,
-                        CATALOGUE)
+    graph = build_graph(
+        classify,
+        extract,
+        FakeLLM(None),
+        agent,
+        "profile",
+        FakeStorage(),
+        CATALOGUE,
+        CATALOGUE,
+        CATALOGUE,
+        CATALOGUE,
+        CATALOGUE,
+        checkpointer=InMemorySaver(),
+    )
 
-    result = graph.invoke({"email": make_email(sender="contact@bains-and-co.example")})
+    result = graph.invoke(
+        {"email": make_email(sender="contact@bains-and-co.example")},
+        {"configurable": {"thread_id": "resolver-agent-graph"}},
+    )
 
     line = result["resolved_order"].lines[0]
     assert (line.product.code, line.method) == ("CAR-35", "agent")
@@ -163,7 +179,12 @@ def test_an_unknown_sender_gets_no_history_tool() -> None:
 
 
 def run_agent(*answers) -> AgentRun:
-    return run_resolver_agent(FakeAgentLLM(*answers), make_resolver_tools(CATALOGUE, CATALOGUE, BAINS), "system", "line")
+    return run_resolver_agent(
+        FakeAgentLLM(*answers),
+        make_resolver_tools(CATALOGUE, CATALOGUE, BAINS),
+        "system",
+        "line",
+    )
 
 
 def test_the_conversation_is_kept_when_the_limit_is_hit() -> None:

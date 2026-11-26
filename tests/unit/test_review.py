@@ -7,7 +7,9 @@ from orderdesk.domain.catalogue import Customer, Product
 from orderdesk.domain.classification import EmailClassification
 from orderdesk.domain.draft import DraftLine, DraftOrder, OrderIssue
 from orderdesk.domain.extraction import ExtractedLine, ExtractedOrder, ProductInfo
+from orderdesk.domain.resolution import CandidateChoice
 from orderdesk.domain.review import LineChange, ReviewDecision
+from orderdesk.resolve.ladder import resolve_line
 from orderdesk.workflow.graph import build_graph
 from tests.factories import make_email
 from tests.fakes import FakeLLM, FakeStorage
@@ -28,14 +30,20 @@ class NoAgent:
         raise AssertionError("the agent must not run in this test")
 
 
-def make_review_graph(extracted: ExtractedOrder, catalogue: MemoryCatalogue = CATALOGUE):
+def make_review_graph(
+    extracted: ExtractedOrder,
+    catalogue: MemoryCatalogue = CATALOGUE,
+    choose_llm=None,
+):
     graph = build_graph(
         classified_as("new_order"),
         FakeLLM(extracted),
-        FakeLLM(None),
+        choose_llm or FakeLLM(None),
         NoAgent(),
         PROFILE,
         FakeStorage(),
+        catalogue,
+        catalogue,
         catalogue,
         catalogue,
         catalogue,
@@ -175,6 +183,8 @@ def test_other_label_never_reaches_review() -> None:
         CATALOGUE,
         CATALOGUE,
         CATALOGUE,
+        CATALOGUE,
+        CATALOGUE,
         checkpointer=InMemorySaver(),
     )
     result = graph.invoke(
@@ -303,3 +313,78 @@ def test_the_second_pause_tells_the_reviewer_what_is_wrong() -> None:
     assert missing["__interrupt__"][0].value["errors"] == ["line 0 has no product: choose one or remove it"]
     assert malformed["__interrupt__"][0].value["errors"]  # the validation message, not a crash
     assert malformed.get("approved_order") is None
+
+
+def test_approve_writes_one_draft_with_orderdesk_origin() -> None:
+    catalogue = MemoryCatalogue([PRODUCT], {KNOWN_EMAIL: CUSTOMER})
+    line = ExtractedLine(
+        raw_text="PF60375 x 2",
+        quantity=2,
+        unit="piece",
+        product=ProductInfo(kind="named", code_as_written="PF60375"),
+    )
+    graph = make_review_graph(ExtractedOrder(lines=[line]), catalogue)
+    config = {"configurable": {"thread_id": "review-write"}}
+
+    paused = graph.invoke({"email": make_email(sender=KNOWN_EMAIL)}, config)
+    assert catalogue.draft_quotations == {}
+    assert "__interrupt__" in paused
+
+    resumed = graph.invoke(Command(resume={"action": "approve", "reviewer": "manager-1"}), config)
+
+    assert resumed["erp_quotation_id"] == "DRAFT-0001"
+    assert len(catalogue.draft_quotations) == 1
+    request = next(iter(catalogue.draft_quotations.values()))
+    assert request.origin == "OrderDesk 999-7"
+
+
+def test_reject_writes_nothing_and_learns_nothing() -> None:
+    catalogue = MemoryCatalogue([PRODUCT], {KNOWN_EMAIL: CUSTOMER})
+    line = ExtractedLine(
+        raw_text="PF60375 x 1",
+        quantity=1,
+        product=ProductInfo(kind="named", text="tap", code_as_written="PF60375"),
+    )
+    graph = make_review_graph(ExtractedOrder(lines=[line]), catalogue)
+    config = {"configurable": {"thread_id": "review-reject-write"}}
+
+    graph.invoke({"email": make_email(sender=KNOWN_EMAIL)}, config)
+    resumed = graph.invoke(Command(resume={"action": "reject", "reviewer": "manager-1"}), config)
+
+    assert catalogue.draft_quotations == {}
+    assert resumed.get("learned_aliases", 0) == 0
+    assert resumed.get("forgotten_aliases", 0) == 0
+
+
+def test_correction_named_line_closes_alias_loop() -> None:
+    basin = Product(code="PF60375", name="Tap lavabo", family="Basin", list_price=175.0)
+    other = Product(code="PF60380", name="Shower tap", family="Shower", list_price=175.0)
+    catalogue = MemoryCatalogue([basin, other], {KNOWN_EMAIL: CUSTOMER})
+    line = ExtractedLine(
+        raw_text="robinet noir x 2",
+        quantity=2,
+        unit="piece",
+        product=ProductInfo(kind="named", text="tap"),
+    )
+    graph = make_review_graph(
+        ExtractedOrder(lines=[line]),
+        catalogue,
+        FakeLLM(CandidateChoice(evidence="tap", code="PF60380")),  # the choice step picks the WRONG product
+    )
+    config = {"configurable": {"thread_id": "review-alias-loop"}}
+
+    paused = graph.invoke({"email": make_email(sender=KNOWN_EMAIL)}, config)
+    assert paused["draft_order"].lines[0].product.code == "PF60380"
+    resumed = graph.invoke(
+        Command(resume={
+            "action": "approve",
+            "reviewer": "manager-1",
+            "changes": [{"line_index": 0, "code": "PF60375"}],  # the reviewer corrects it
+        }),
+        config,
+    )
+
+    assert resumed["learned_aliases"] == 1
+    resolution = resolve_line(0, line, CUSTOMER, catalogue, catalogue, catalogue)
+    assert resolution.method == "alias"
+    assert resolution.product.code == "PF60375"

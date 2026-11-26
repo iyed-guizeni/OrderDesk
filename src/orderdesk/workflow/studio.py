@@ -31,6 +31,8 @@ GRAPH =  build_graph(
         erp=catalogue,
         search=catalogue,
         aliases=catalogue,
+        writer=catalogue,
+        alias_writer=catalogue,
     )
 
 def make_graph() -> CompiledStateGraph:

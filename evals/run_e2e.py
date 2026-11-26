@@ -86,6 +86,8 @@ def build_eval_graph(provider: str, model: str):
         erp=catalogue,
         search=catalogue,
         aliases=catalogue,
+        writer=catalogue,
+        alias_writer=catalogue,
         checkpointer=InMemorySaver(),
     )
 
