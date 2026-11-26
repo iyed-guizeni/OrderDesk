@@ -24,6 +24,10 @@ class ErpPort(Protocol):
         """One confirmed order, only if it belongs to this customer; otherwise None."""
         ...
 
+    def find_order_by_client_ref(self, customer_id: int, client_ref: str) -> PastOrder | None:
+        """This customer's confirmed order with this PO number, compared with code_key; or None."""
+        ...
+
 
 class ProductSearch(Protocol):
     def search(self, text: str, limit: int) -> list[Candidate]:

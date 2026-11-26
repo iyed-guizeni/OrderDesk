@@ -1,0 +1,1 @@
+Read @docs/PROJECT_CONTEXT.md before any work

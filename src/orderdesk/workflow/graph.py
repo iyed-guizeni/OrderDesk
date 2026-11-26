@@ -1,5 +1,6 @@
 from typing import Literal
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
@@ -12,8 +13,10 @@ from orderdesk.workflow.classification import make_classify_node
 from orderdesk.workflow.new_order import make_extract_node
 from orderdesk.workflow.resolve import make_resolve_node
 from orderdesk.workflow.resolve_agent import make_resolve_agent_node, needs_agent
+from orderdesk.workflow.review import make_review_node
 from orderdesk.workflow.router import route_email
 from orderdesk.workflow.state import WorkflowState
+from orderdesk.workflow.validate import make_validate_node
 
 
 def after_resolve(state: WorkflowState) -> Literal["choose", "resolve_agent", "__end__"]:
@@ -31,6 +34,7 @@ def build_graph(
     erp: ErpPort,
     search: ProductSearch,
     aliases: AliasStore,
+    checkpointer: BaseCheckpointSaver | None = None,
 ) -> CompiledStateGraph:
     """The email workflow. Everything it needs is passed in: no API keys or files are touched at import."""
     builder = StateGraph(WorkflowState)
@@ -49,14 +53,22 @@ def build_graph(
     builder.add_node("resolve", make_resolve_node(erp, search, aliases))
     builder.add_node("choose", make_choose_node(choose_llm, profile))
     builder.add_node("resolve_agent", make_resolve_agent_node(agent_llm, profile, erp, search))
+    builder.add_node("validate", make_validate_node(erp))
+    builder.add_node("review", make_review_node(erp))
 
     builder.add_edge(START, "classification")
     builder.add_conditional_edges("classification", route_email, list(branch_nodes))
     builder.add_edge("new_order", "resolve")
-    builder.add_conditional_edges("resolve", after_resolve, ["choose", "resolve_agent", END])
-    builder.add_conditional_edges("choose", needs_agent, ["resolve_agent", END])  # llm_said_none -> agent
-    builder.add_edge("resolve_agent", END)
+    builder.add_conditional_edges(
+        "resolve",
+        after_resolve,
+        {"choose": "choose", "resolve_agent": "resolve_agent", END: "validate"},
+    )
+    builder.add_conditional_edges("choose", needs_agent, {"resolve_agent": "resolve_agent", END: "validate"})
+    builder.add_edge("resolve_agent", "validate")
+    builder.add_edge("validate", "review")
+    builder.add_edge("review", END)
     for name in branch_nodes:
         if name != "new_order":
             builder.add_edge(name, END)
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)

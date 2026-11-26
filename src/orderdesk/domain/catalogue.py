@@ -14,6 +14,7 @@ class Product(BaseModel):
     finish: str | None = None  # e.g. "noir brossé"; None when the product has no finish
     uom: str = "piece"  # unit the ERP sells it in
     active: bool = True  # False = discontinued (checked later, not by the resolver)
+    list_price: float | None = None  # unit price excl. tax, from the ERP; None = no price set
 
 
 class Customer(BaseModel):
@@ -40,6 +41,7 @@ class PastOrder(BaseModel):
     order_id: str  # e.g. "SO-2291"
     date: datetime.date
     lines: list[PastOrderLine]
+    client_ref: str | None = None  # the client's own PO number (Odoo client_order_ref)
 
 
 class Candidate(BaseModel):

@@ -16,8 +16,10 @@ import json
 import os
 import time
 from pathlib import Path
+from uuid import uuid4
 
 from dotenv import load_dotenv
+from langgraph.checkpoint.memory import InMemorySaver
 from langsmith import Client
 
 from evals.e2e_metrics import score_email, summarize
@@ -56,11 +58,17 @@ def upload_dataset(client: Client, cases: list[dict]) -> str:
     name = f"orderdesk-e2e-{digest}"
     if not client.has_dataset(dataset_name=name):
         dataset = client.create_dataset(name, description=f"Whole emails from {CASES.name} ({len(cases)})")
-        client.create_examples(dataset_id=dataset.id, examples=[
-            {"inputs": {"email": case["email"]}, "outputs": case["expected"],
-             "metadata": {"case": case["id"], "difficulty": case["difficulty"], "note": case["note"]}}
-            for case in cases
-        ])
+        client.create_examples(
+            dataset_id=dataset.id,
+            examples=[
+                {
+                    "inputs": {"email": case["email"]},
+                    "outputs": case["expected"],
+                    "metadata": {"case": case["id"], "difficulty": case["difficulty"], "note": case["note"]},
+                }
+                for case in cases
+            ],
+        )
     return name
 
 
@@ -73,7 +81,12 @@ def build_eval_graph(provider: str, model: str):
         extract_llm=make_fallback_llm(chain, ExtractedOrder),
         choose_llm=make_fallback_llm(chain, CandidateChoice),
         agent_llm=make_fallback_chat(chain),
-        profile=ONDYNA_PROFILE, storage=NoFiles(), erp=catalogue, search=catalogue, aliases=catalogue,
+        profile=ONDYNA_PROFILE,
+        storage=NoFiles(),
+        erp=catalogue,
+        search=catalogue,
+        aliases=catalogue,
+        checkpointer=InMemorySaver(),
     )
 
 
@@ -83,15 +96,24 @@ def facts(state: dict, seconds: float) -> dict:
     lines = []
     if extracted is not None and resolved is not None:
         for resolution in resolved.lines:
-            lines.append({
-                "raw_text": extracted.lines[resolution.line_index].raw_text,
-                "code": resolution.product.code if resolution.product else None,
-                "method": resolution.method, "reason": resolution.reason, "next_step": resolution.next_step,
-                "evidence": resolution.evidence,
-            })
-    return {"label": state["classification"].label, "po_number": extracted.po_number if extracted else None,
-            "lines": lines, "grounding_issues": [issue.kind for issue in state.get("grounding_issues", [])],
-            "providers_failed": False, "seconds": round(seconds, 2)}
+            lines.append(
+                {
+                    "raw_text": extracted.lines[resolution.line_index].raw_text,
+                    "code": resolution.product.code if resolution.product else None,
+                    "method": resolution.method,
+                    "reason": resolution.reason,
+                    "next_step": resolution.next_step,
+                    "evidence": resolution.evidence,
+                }
+            )
+    return {
+        "label": state["classification"].label,
+        "po_number": extracted.po_number if extracted else None,
+        "lines": lines,
+        "grounding_issues": [issue.kind for issue in state.get("grounding_issues", [])],
+        "providers_failed": False,
+        "seconds": round(seconds, 2),
+    }
 
 
 def make_target(graph):
@@ -99,7 +121,13 @@ def make_target(graph):
         email = EmailContext(tenant_id=TENANT_ID, email_id=1, **inputs["email"])
         start = time.perf_counter()
         try:
-            state = graph.invoke(WorkflowState(email=email), {"run_name": "orderdesk_workflow"})
+            state = graph.invoke(
+                WorkflowState(email=email),
+                {
+                    "run_name": "orderdesk_workflow",
+                    "configurable": {"thread_id": f"e2e-{uuid4()}"},
+                },
+            )
         except AllProvidersFailed:
             return {"providers_failed": True, "seconds": round(time.perf_counter() - start, 2)}
         return facts(state, time.perf_counter() - start)
@@ -108,16 +136,24 @@ def make_target(graph):
 
 
 def email_scores(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
-    return {"results": [{"key": key, "score": value} for key, value in score_email(outputs, reference_outputs).items()
-                        if value is not None]}
+    return {
+        "results": [
+            {"key": key, "score": value}
+            for key, value in score_email(outputs, reference_outputs).items()
+            if value is not None
+        ]
+    }
 
 
 def experiment_summary(inputs: list[dict], outputs: list[dict], reference_outputs: list[dict]) -> dict:
-    summary = summarize([score_email(o, r) for o, r in zip(outputs, reference_outputs)])
-    return {"results": [
-        {"key": key, "value": value} if isinstance(value, str) else {"key": key, "score": value}
-        for key, value in summary.items() if value is not None
-    ]}
+    summary = summarize([score_email(o, r) for o, r in zip(outputs, reference_outputs, strict=False)])
+    return {
+        "results": [
+            {"key": key, "value": value} if isinstance(value, str) else {"key": key, "score": value}
+            for key, value in summary.items()
+            if value is not None
+        ]
+    }
 
 
 def main() -> None:
@@ -148,9 +184,10 @@ def main() -> None:
         max_concurrency=0,  # one email at a time: free tiers limit requests per minute
     )
     rows = [row for row in results if row["run"].outputs]  # a crashed email has no outputs: its trace shows why
-    scored = [(row["example"].metadata["case"], row["run"].outputs, score_email(row["run"].outputs,
-                                                                              row["example"].outputs))
-              for row in rows]
+    scored = [
+        (row["example"].metadata["case"], row["run"].outputs, score_email(row["run"].outputs, row["example"].outputs))
+        for row in rows
+    ]
     print(f"\nexperiment {results.experiment_name}: {len(rows)} emails scored, open it in LangSmith for the traces")
     for key, value in summarize([s for _, _, s in scored]).items():
         print(f"  {key:<20} {value}")
@@ -163,13 +200,17 @@ def print_wrong_emails(scored: list[tuple[str, dict, dict]], expected: dict[str,
         if scores.get("email_correct", True) or scores.get("providers_failed"):
             continue
         want = expected[case]
-        print(f"\n  {case}: label {outputs['label']} (want {want['label']}), PO {outputs['po_number']!r} "
-              f"(want {want['po_number']!r})")
+        print(
+            f"\n  {case}: label {outputs['label']} (want {want['label']}), PO {outputs['po_number']!r} "
+            f"(want {want['po_number']!r})"
+        )
         for i, line in enumerate(outputs["lines"]):
             target = want["lines"][i]["code"] if i < len(want["lines"]) else "(not in the email)"
             mark = "ok" if line["code"] == target else "WRONG" if line["code"] else "-> person"
-            print(f"    {mark:<9} {line['raw_text']!r}: got {line['code']} via {line['method'] or line['reason']},"
-                  f" want {target}")
+            print(
+                f"    {mark:<9} {line['raw_text']!r}: got {line['code']} via {line['method'] or line['reason']},"
+                f" want {target}"
+            )
 
 
 if __name__ == "__main__":

@@ -19,11 +19,10 @@ class MemoryCatalogue:
         self._products = {code_key(p.code): p for p in products}
         self._customers = {email.lower(): customer for email, customer in (customers or {}).items()}
         self._aliases = {(cid, normalize(text)): code for (cid, text), code in (aliases or {}).items()}
-        self._orders = {cid: sorted(orders, key=lambda o: o.date, reverse=True)
-                        for cid, orders in (past_orders or {}).items()}
-        self._tokens = {
-            key: tokens(f"{p.code} {p.name} {p.finish or ''}") for key, p in self._products.items()
+        self._orders = {
+            cid: sorted(orders, key=lambda o: o.date, reverse=True) for cid, orders in (past_orders or {}).items()
         }
+        self._tokens = {key: tokens(f"{p.code} {p.name} {p.finish or ''}") for key, p in self._products.items()}
 
     def find_customer(self, email: str) -> Customer | None:
         return self._customers.get(email.strip().lower())
@@ -37,6 +36,17 @@ class MemoryCatalogue:
     def get_order(self, customer_id: int, order_id: str) -> PastOrder | None:
         wanted = code_key(order_id)
         return next((o for o in self._orders.get(customer_id, []) if code_key(o.order_id) == wanted), None)
+
+    def find_order_by_client_ref(self, customer_id: int, client_ref: str) -> PastOrder | None:
+        wanted = code_key(client_ref)
+        return next(
+            (
+                order
+                for order in self._orders.get(customer_id, [])
+                if order.client_ref is not None and code_key(order.client_ref) == wanted
+            ),
+            None,
+        )
 
     def search(self, text: str, limit: int) -> list[Candidate]:
         """Score = share of the client's words found in the product (code, name, finish)."""

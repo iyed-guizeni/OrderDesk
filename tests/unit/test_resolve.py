@@ -1,10 +1,12 @@
 """The deterministic resolve ladder: alias -> exact code -> search, and where unresolved lines go next."""
 
+import datetime
+
 import pytest
 from pydantic import ValidationError
 
 from orderdesk.catalogue.memory import MemoryCatalogue
-from orderdesk.domain.catalogue import Customer, Product
+from orderdesk.domain.catalogue import Customer, PastOrder, PastOrderLine, Product
 from orderdesk.domain.extraction import ExtractedLine, ExtractedOrder, ProductInfo
 from orderdesk.domain.resolution import LineResolution
 from orderdesk.resolve.ladder import resolve_line, resolve_order
@@ -23,10 +25,15 @@ def mixer(code: str, finish: str) -> Product:
 PRODUCTS = [
     mixer("PF60375", "chrome"),
     mixer("PF60376", "noir brossé"),
-    Product(code="PF60380", name="Mitigeur bain-douche Profilo", family="Mitigeur bain-douche Profilo",
-            finish="chrome"),
-    Product(code="PH60251", name="Colonne de douche thermostatique", family="Colonne de douche thermostatique",
-            finish="chrome"),
+    Product(
+        code="PF60380", name="Mitigeur bain-douche Profilo", family="Mitigeur bain-douche Profilo", finish="chrome"
+    ),
+    Product(
+        code="PH60251",
+        name="Colonne de douche thermostatique",
+        family="Colonne de douche thermostatique",
+        finish="chrome",
+    ),
     Product(code="CAR-35", name="Cartouche céramique 35 mm", family="Cartouche céramique 35 mm"),
 ]
 
@@ -35,8 +42,9 @@ def make_catalogue(aliases: dict | None = None) -> MemoryCatalogue:
     return MemoryCatalogue(PRODUCTS, {KNOWN_EMAIL: KNOWN}, aliases)
 
 
-def make_line(kind: str = "named", text: str | None = None, variant: str | None = None,
-              code: str | None = None) -> ExtractedLine:
+def make_line(
+    kind: str = "named", text: str | None = None, variant: str | None = None, code: str | None = None
+) -> ExtractedLine:
     product = ProductInfo(kind=kind, text=text, variant_text=variant, code_as_written=code)
     return ExtractedLine(raw_text="(as written)", quantity=2, product=product)
 
@@ -166,8 +174,9 @@ def test_resolved_line_without_product_is_rejected() -> None:
 
 def test_node_returns_only_the_resolved_order() -> None:
     catalogue = make_catalogue()
-    state = WorkflowState(email=make_email(sender=KNOWN_EMAIL),
-                          extracted_order=ExtractedOrder(lines=[make_line(code="PF60375")]))
+    state = WorkflowState(
+        email=make_email(sender=KNOWN_EMAIL), extracted_order=ExtractedOrder(lines=[make_line(code="PF60375")])
+    )
 
     update = make_resolve_node(catalogue, catalogue, catalogue)(state)
 
@@ -180,3 +189,28 @@ def test_node_refuses_to_run_before_extraction() -> None:
 
     with pytest.raises(ValueError, match="before extraction"):
         make_resolve_node(catalogue, catalogue, catalogue)(WorkflowState(email=make_email()))
+
+
+def test_find_order_by_client_ref_normalizes_and_filters_customer() -> None:
+    order = PastOrder(
+        order_id="SO-2291",
+        date=datetime.date(2026, 10, 2),
+        lines=[PastOrderLine(code="CAR-35", name="Cartouche", quantity=4)],
+        client_ref="BC-2187",
+    )
+    catalogue = MemoryCatalogue([], past_orders={2: [order]})
+
+    assert catalogue.find_order_by_client_ref(2, "bc 2187") == order
+
+
+def test_find_order_by_client_ref_rejects_another_customer_and_unknown_reference() -> None:
+    order = PastOrder(
+        order_id="SO-2291",
+        date=datetime.date(2026, 10, 2),
+        lines=[PastOrderLine(code="CAR-35", name="Cartouche", quantity=4)],
+        client_ref="BC-2187",
+    )
+    catalogue = MemoryCatalogue([], past_orders={2: [order]})
+
+    assert catalogue.find_order_by_client_ref(1, "BC-2187") is None
+    assert catalogue.find_order_by_client_ref(2, "UNKNOWN") is None
