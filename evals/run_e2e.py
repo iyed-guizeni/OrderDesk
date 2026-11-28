@@ -30,9 +30,9 @@ from orderdesk.domain.resolution import CandidateChoice
 from orderdesk.llm.client import AllProvidersFailed, make_fallback_chat, make_fallback_llm
 from orderdesk.profiles.demo_catalogue import make_demo_catalogue
 from orderdesk.profiles.ondyna import ONDYNA_PROFILE
+from orderdesk.workflow.app import PROVIDER_CHAIN
 from orderdesk.workflow.graph import build_graph
 from orderdesk.workflow.state import WorkflowState
-from orderdesk.workflow.studio import PROVIDER_CHAIN
 
 CASES = Path(__file__).parent / "e2e" / "ondyna.jsonl"
 TENANT_ID = 999  # the eval tenant

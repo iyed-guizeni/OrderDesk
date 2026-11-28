@@ -15,4 +15,10 @@ def test_all_migrations_are_applied_and_running_again_does_nothing(conn: psycopg
     assert apply_migrations(conn) == []
 
     versions = [row[0] for row in conn.execute("SELECT version FROM schema_migrations ORDER BY version")]
-    assert versions[:4] == ["0001_init", "0002_jobs", "0003_jobs_fairness", "0004_jobs_claimed_at"]
+    assert versions[:5] == [
+        "0001_init",
+        "0002_jobs",
+        "0003_jobs_fairness",
+        "0004_jobs_claimed_at",
+        "0005_email_workflows",
+    ]

@@ -1,269 +1,331 @@
-# TASKS: production loop, batch 2 (write the approved draft + learn synonyms)
+# TASKS: production loop, batch 3 (the worker runs the graph, a person reviews from a script)
 
-> **STATUS: READY TO IMPLEMENT. Copilot, your job is to WRITE the code for Tasks 1–4 now.** Nothing exists
+> **STATUS: READY TO IMPLEMENT. Copilot, your job is to WRITE the code for Tasks 1–5 now.** Nothing exists
 > yet: that is expected, you are the one creating it. Do not review, do not ask what to do. Implement, run the
 > tests, fix failures, then write `.ai/IMPLEMENTATION_REPORT.md`. The lead reviews afterwards.
 
 **From:** the lead engineer (Claude Code). **For:** GitHub Copilot Agent, the implementation engineer.
 **Read first:**
-- `docs/PROJECT_CONTEXT.md`: §2.3 steps 6–7, §2.6 Product synonyms, §3.3 Ports, §6 ADR 3, 7, 23 and 29.
-- `.ai/archive/batch-1/REVIEW_REPORT.md`: what batch 1 built, and the review's remarks.
-- The code of batch 1: `domain/draft.py`, `domain/review.py`, `checks/order.py`, `workflow/review.py` and
-  `workflow/graph.py`.
+- `docs/PROJECT_CONTEXT.md`: §2.1, §2.2, §3.2, §3.3 "Where things are built", §3.4 error layers, §7.4.
+- `.ai/archive/batch-2/REVIEW_REPORT.md`.
+- `jobs/queue.py`, `jobs/worker.py`, `intake/repository.py`, `db/connection.py`, `db/migrate.py`,
+  `scripts/migrate.py`, `scripts/run_workers.py`, `workflow/studio.py`, `workflow/graph.py`,
+  `tests/integration/conftest.py`, `tests/integration/test_jobs.py`.
 
 **When done:** write `.ai/IMPLEMENTATION_REPORT.md` (format at the end). **Do not commit.**
 
+**The database is needed.** Docker Desktop must be running with `docker compose up -d app-db` (port 5434). Then:
+`venv\Scripts\python scripts\migrate.py`, then `venv\Scripts\python -m pytest tests/integration -q`. Today it
+reports 20 passed. If the database is unreachable, the integration tests **skip**. A skip is not a pass: say so in
+the report.
+
 ## Context
 
-Batch 1 ends at the Review pause: a person approves or rejects the draft. This batch adds what happens after an
-**approve**:
+The graph is complete up to the ERP write, but only Studio and the e2e eval run it. In production, the **worker**
+runs it, and a person reviews **later, from another process**. So the graph's state must be saved in Postgres
+between the two.
 
 ```
-… validate ─► review ─► approve ─► write_draft ─► learn ─► END
-                      └─ reject ──────────────────────────► END   (nothing written, nothing learned)
+intake ─► jobs ─► worker: graph.invoke(...) ─► pauses at review ─► email_workflows.status = waiting_review
+                                                                          │   (hours later, another process)
+scripts/review.py approve 42 ─► graph.invoke(Command(resume=...)) ─► write_draft ─► learn ─► status = approved
 ```
 
-- **write_draft** creates a **draft quotation** in the ERP. It is never a confirmed order (ADR 3).
-  - It is **idempotent**. The quotation carries the OrderDesk ID in `origin`, built from the tenant and the email:
-    `"OrderDesk 999-42"`.
-  - A retried job that runs the step twice gets the same quotation back, never a second one.
-- **learn** remembers the client's words for each approved product, so the next email with the same words resolves
-  at the alias step, with no LLM. These are the "product synonyms" of §2.6.
+This batch builds:
+1. the **Postgres checkpointer**;
+2. one **`email_workflows`** row per email (its status and the trace id of its first run);
+3. **the worker** running the graph;
+4. **a review service plus a thin CLI**.
 
-The Postgres checkpointer, the worker, the review script and LangSmith feedback are batch 3. Don't build them.
+The API (phase 3) will call the same review service.
+
+**Known limit, accepted for this batch:** the ERP and the synonyms are still the in-memory demo catalogue. The
+worker and `review.py` are two processes with two catalogues, so a draft written by `review.py` and a learned alias
+are lost when it exits. `email_workflows.erp_quotation_id` still records the id. **Batch 4** moves drafts and
+synonyms to Postgres. Do not build that now.
 
 ## Global rules (apply to every task)
 
-1. **No LLM in this batch.** Every new step is plain code.
-2. **The model never gets write access.** The write methods live on **new, separate Protocols**: `ErpWriter` and
-   `AliasWriter`. Only the `write_draft` and `learn` nodes receive them. Never add a write method to `ErpPort`,
-   `ProductSearch` or `AliasStore`: those reach the agent's tools and the resolve ladder.
-3. **Data minimisation:**
-   - The quotation request holds `customer_id`, codes, quantities and prices only.
-   - Logs use `tenant_id` and `email_id`, never names, addresses or email text.
-4. **Style** (`docs/PROJECT_CONTEXT.md` §8.2):
-   - frozen Pydantic models;
+1. **No LLM in tests.** Use `tests/fakes.py` (`FakeLLM`, `FakeStorage`) and `MemoryCatalogue`.
+   - Never call a real LLM or LangSmith.
+   - Don't run `evals/run_*.py`.
+   - Don't run `scripts/run_workers.py` against real providers.
+2. **SQL lives in repository modules only.** No SQL in `workflow/`, `services/` or `scripts/`. Every query filters
+   by `tenant_id`.
+3. **Never edit an applied migration** (0001–0004). Add `0005_email_workflows.sql`.
+4. **Build once at the entry point** (ADR 28): the worker builds the graph and the checkpointer **once at start**,
+   never per job.
+5. **Data minimisation:**
+   - Logs carry `tenant_id`, `email_id` and the status, never the sender, the subject or the body.
+   - LangSmith metadata: `tenant_id` and `email_id` only.
+6. **Style** (§8.2):
+   - frozen models;
    - type hints;
    - named constants;
-   - node factories `make_<name>_node(...)` that return only the fields they change;
-   - pure logic outside `workflow/`;
-   - a module docstring on every new file;
-   - no `print` in `src/`;
+   - module docstrings;
+   - no `print` in `src/` (scripts may print);
    - no commented-out code.
-5. **Format only the lines you change.** Do **not** run `ruff format` on whole files: in batch 1, that turned small
-   changes into large diffs. Run `venv\Scripts\ruff check <the files you touched>` and fix what it reports.
-6. **Never call a real LLM or LangSmith.** Unit tests use `tests/fakes.py` and `MemoryCatalogue`. Do not run
-   `evals/run_*.py`: the lead runs them.
-7. Keep changes small. Don't refactor code this batch doesn't need.
+7. **Format only the lines you change.** No whole-file `ruff format`. Run `venv\Scripts\ruff check` on the touched
+   files.
+8. Keep changes small. Don't refactor what this batch doesn't need, except what Task 1 asks.
 
 ---
 
-## Task 1: the write side of the ERP (ports + memory adapter)
+## Task 1: one place that builds the production graph
 
 **Files:**
-- new `src/orderdesk/domain/quotation.py`
-- `src/orderdesk/catalogue/ports.py`
-- `src/orderdesk/catalogue/memory.py`
-
-### Models (`domain/quotation.py`)
-
-```python
-ORIGIN_PREFIX = "OrderDesk"
-AliasOutcome = Literal["learned", "unchanged", "forgotten"]
-
-def orderdesk_origin(tenant_id: int, email_id: int) -> str:
-    """'OrderDesk 999-42': the same email always gives the same origin. That is what makes the write idempotent."""
-
-class QuotationLine(BaseModel):     # frozen, extra="forbid"
-    code: str
-    quantity: float                 # > 0 (Field(gt=0))
-    unit_price: float | None        # the ERP price shown to the reviewer; None = let the ERP price it
-
-class QuotationRequest(BaseModel):  # frozen, extra="forbid"
-    origin: str                     # orderdesk_origin(...)
-    customer_id: int
-    client_ref: str | None          # the client's PO number (Odoo client_order_ref)
-    lines: list[QuotationLine]      # min_length=1
-```
-
-### Ports (`catalogue/ports.py`)
-
-```python
-class ErpWriter(Protocol):
-    """The ONLY way OrderDesk writes to the ERP. Given to the write_draft node alone, never to an agent."""
-
-    def create_draft_quotation(self, request: QuotationRequest) -> str:
-        """Create a DRAFT quotation and return its ERP id. Idempotent: if a quotation with this origin already
-        exists, return its id and create nothing."""
-        ...
-
-class AliasWriter(Protocol):
-    """Remembers a person's approval. Given to the learn node alone."""
-
-    def learn_alias(self, customer_id: int, text: str, code: str) -> AliasOutcome:
-        """A person approved this product for these words. The text is normalised like find_alias's.
-        - no alias yet for these words          -> store it, return "learned"
-        - the same code is already stored        -> change nothing, return "unchanged"
-        - ANOTHER code is stored (a conflict)    -> DELETE the alias, return "forgotten"
-        Words that meant two products are unclear: they go back to the normal search and choice steps, never an
-        automatic (possibly wrong) product."""
-        ...
-```
-
-### Memory adapter (`catalogue/memory.py`)
-
-`MemoryCatalogue` implements both Protocols:
-- `create_draft_quotation`:
-  - stores the request in a dict keyed by `origin`;
-  - ids are `"DRAFT-0001"`, `"DRAFT-0002"`, … (a module constant for the prefix);
-  - the same origin returns the same id.
-- A read-only property `draft_quotations -> dict[str, QuotationRequest]` (id → request), for tests and the demo.
-- **Drafts never appear in `past_orders` or `get_order`.** Those return CONFIRMED orders only (see the `PastOrder`
-  docstring). "Same as last time" must never copy a draft.
-- `learn_alias` writes into the same alias dict that `find_alias` reads, with the same `normalize` key, so a learned
-  alias is found by the next resolve.
-- Update the module docstring: it now also implements `ErpWriter` and `AliasWriter`.
-
-**Tests** (new `tests/unit/test_memory_catalogue.py`):
-1. `orderdesk_origin(999, 42) == "OrderDesk 999-42"`.
-2. Creating the same request twice returns the same id, and `draft_quotations` holds one entry.
-3. Two different origins give two ids.
-4. A draft never shows up in `past_orders` or `get_order`.
-5. After `learn_alias(2, "Robinet  Profilo NOIR", "PF60376")`, `find_alias(2, "robinet profilo noir")` returns
-   `"PF60376"`. Another customer gets None.
-6. **Conflict → forget:** after the same words are learned with a second, different code, `find_alias` returns
-   None and the outcome is `"forgotten"`. Learning the same code again gives `"unchanged"`. A new alias gives
-   `"learned"`.
-7. `QuotationRequest` refuses an empty line list, and `QuotationLine` refuses `quantity=0`.
-
----
-
-## Task 2: the write_draft node
-
-**Files:**
-- new `src/orderdesk/workflow/write_draft.py`
-- add `to_quotation_request` to `src/orderdesk/checks/order.py`
-- `src/orderdesk/workflow/state.py`
-
-- **Pure function** in `checks/order.py`:
-  `to_quotation_request(approved: DraftOrder, tenant_id: int, email_id: int) -> QuotationRequest`.
-  - `origin` comes from `orderdesk_origin(tenant_id, email_id)`.
-  - `client_ref` is the draft's `po_number`.
-  - Lines are in order: `code`, `quantity` and `unit_price` from each approved `DraftLine`.
-  - Raise `ValueError` if `customer_id` is None, or if a line has no product or no quantity. Review already refuses
-    these, so reaching this is a bug, and it must fail loudly, not write half an order.
-- **Node:** `make_write_draft_node(writer: ErpWriter)` returns a node that:
-  - raises `ValueError` if `state.approved_order` is None;
-  - builds the request from `state.email.tenant_id` and `state.email.email_id`;
-  - calls `writer.create_draft_quotation`;
-  - returns `{"erp_quotation_id": quotation_id}`;
-  - logs one line: `logging.getLogger(__name__).info("draft quotation %s for tenant %s email %s", ...)`.
-- `WorkflowState`: add `erp_quotation_id: str | None = None`.
-
-**Tests** (new `tests/unit/test_write_draft.py`):
-1. `to_quotation_request` keeps codes, quantities, prices, the PO and the origin, in order.
-2. It raises for a draft with no customer, and for a line without a product.
-3. The node writes exactly one quotation and returns its id.
-4. **Idempotency:** running the node twice on the same state gives the same id, and one quotation in
-   `draft_quotations`.
-5. The node raises when there is no `approved_order`.
-
----
-
-## Task 3: the learn node (product synonyms)
-
-**Files:**
-- new `src/orderdesk/workflow/learn.py`
-- add `aliases_to_learn` to `src/orderdesk/checks/order.py`
-- `src/orderdesk/resolve/ladder.py`
-- `src/orderdesk/workflow/state.py`
-
-The learning key must be **exactly** what the ladder looks up. In `resolve/ladder.py`, rename the private
-`_words(line)` to a public `alias_words(line)` with a one-line docstring, and update its callers in that file. Learn
-must reuse it. Don't copy it.
-
-The rules, from §2.6 and ADR 29:
-- **Pure function** in `checks/order.py`:
-  `aliases_to_learn(approved: DraftOrder, extracted: ExtractedOrder) -> list[tuple[str, str]]`, a list of
-  `(words, code)`. A line is learned only when **all** of these hold:
-  1. It is in the approved order (a removed line is never learned).
-  2. Its extracted line has `product.kind == "named"`: never `previous_order` ("same as last time" carries no
-     wording), and never `missing`.
-  3. Its extracted line has **no** `code_as_written`: we never learn from codes or references.
-  4. `alias_words(extracted_line)` is not empty.
-- **Node:** `make_learn_node(aliases: AliasWriter)` returns a node that:
-  - raises `ValueError` without `approved_order` or `extracted_order`;
-  - does nothing when `approved_order.customer_id` is None;
-  - calls `learn_alias(customer_id, words, code)` for each pair;
-  - returns `{"learned_aliases": <number of "learned">, "forgotten_aliases": <number of "forgotten">}`;
-  - logs one line with both counts (`tenant_id` and `email_id`, no words).
-- `WorkflowState`: add `learned_aliases: int = 0` and `forgotten_aliases: int = 0`.
-- A line the reviewer **corrected** is passed with the reviewer's product:
-  - If its words had no alias, it's learned, and the next email resolves correctly with no LLM.
-  - If its words pointed to another product, which is the usual case for a correction after the alias step, the
-    alias is **forgotten**. Those words are unclear, so a person or the choice step decides next time.
-
-**Tests** (new `tests/unit/test_learn.py`):
-1. A `named` line with words is learned as `(alias_words(line), code)`.
-2. `previous_order`, `missing` and code-only lines (`code_as_written` set) are not learned.
-3. A line removed at review is not learned.
-4. A corrected line is learned with the **reviewer's** product when its words had no alias.
-5. A corrected line whose words already had an alias to **another** product → the alias is gone,
-   `forgotten_aliases == 1`, and the next `resolve_line` on those words does **not** use `method="alias"`.
-6. **The loop closes:** after the learn node runs on a `MemoryCatalogue`, `resolve_line` on the same words for the
-   same customer resolves with `method="alias"`.
-7. An unknown customer (`customer_id=None`) learns nothing and doesn't fail.
-
----
-
-## Task 4: wire it into the graph
-
-**Files:**
-- `src/orderdesk/workflow/graph.py`
+- new `src/orderdesk/workflow/app.py`
 - `src/orderdesk/workflow/studio.py`
 - `evals/run_e2e.py`
-- `tests/unit/test_graph.py`
-- `tests/unit/test_review.py`
+- `evals/run_resolver.py`
 
-1. Add `after_review(state) -> Literal["write_draft", "__end__"]` to `graph.py`. It returns `"write_draft"` when
-   `state.approved_order` is set, and END otherwise.
-2. Change the edges: review goes through `after_review`, then `write_draft` → `learn` → END. Learn runs
-   **after** the write: if the write fails, nothing is learned.
-3. `build_graph(...)` gets two new **keyword** parameters, `writer: ErpWriter` and `alias_writer: AliasWriter`,
-   placed after `aliases` and before `checkpointer`. They are required, with no default: a graph that can approve
-   must be able to write.
-4. Update every caller:
-   - `studio.py`: pass the demo `catalogue` for both. This is the one change allowed in `studio.py`.
-   - `evals/run_e2e.py`: pass the fresh per-run `catalogue` for both. The e2e run stops at review, so nothing is
-     written. Don't change anything else there.
-   - `tests/unit/test_graph.py` and `tests/unit/test_review.py`: pass the test catalogue.
-5. Graph tests (add them to `tests/unit/test_review.py`):
-   1. Approve → the catalogue holds exactly one draft quotation, whose origin is `"OrderDesk 999-7"` (the
-      `make_email()` defaults). The result has `erp_quotation_id`.
-   2. Reject → `draft_quotations` is empty and `learned_aliases` is 0.
-   3. **Nothing is written before the approval:** at the pause, `draft_quotations` is empty.
-   4. Approve with a correction on a `named` line whose words had **no alias yet** → the next resolve of the same words for that customer gives
-      `method="alias"` with the corrected product. This is the loop, from start to end.
+The problem: `studio.py` builds a whole graph **at import**, and both eval scripts import `PROVIDER_CHAIN` from
+it. Any import of `studio` therefore loads settings and builds LLM clients. The worker needs the same graph with a
+checkpointer.
+
+1. Create `workflow/app.py` with:
+   - `PROVIDER_CHAIN`, moved from `studio.py` and unchanged;
+   - `build_app_graph(storage: Storage, catalogue: MemoryCatalogue, checkpointer: BaseCheckpointSaver | None) ->
+     CompiledStateGraph`. It builds the four LLMs from `PROVIDER_CHAIN`, exactly as `studio.py` does today, and
+     calls `build_graph(...)`, passing `catalogue` as `erp`, `search`, `aliases`, `writer` and `alias_writer`.
+   - **Nothing at import time:** no `load_settings()` and no graph built.
+2. `studio.py`:
+   ```python
+   GRAPH = build_app_graph(LocalStorage(settings.storage_dir), make_demo_catalogue(), checkpointer=None)
+   ```
+   It keeps `make_graph()`. Studio brings its own persistence, so the checkpointer must stay `None` here.
+3. `evals/run_e2e.py` and `evals/run_resolver.py` import `PROVIDER_CHAIN` from `orderdesk.workflow.app`. Change
+   nothing else in them.
+
+**Test:** in `tests/unit/test_graph.py`, add a test that `import orderdesk.workflow.app` doesn't call
+`load_settings`: patch it to raise, then import the module fresh with `importlib.reload`.
+
+---
+
+## Task 2: migration 0005 and the `email_workflows` repository
+
+**Files:**
+- new `src/orderdesk/db/migrations/0005_email_workflows.sql`
+- new `src/orderdesk/db/email_workflows.py`
+- new `src/orderdesk/domain/workflow_run.py`
+
+```sql
+-- One row per email that entered the workflow: where it stands, and the trace of its first run.
+CREATE TABLE IF NOT EXISTS email_workflows (
+    email_id          BIGINT       PRIMARY KEY REFERENCES emails (id) ON DELETE CASCADE,
+    tenant_id         INT          NOT NULL,
+    thread_id         TEXT         NOT NULL UNIQUE,        -- 'tenant-{tenant_id}:email-{email_id}' (checkpointer)
+    status            TEXT         NOT NULL CHECK (status IN
+                        ('running', 'waiting_review', 'reviewing', 'approved', 'rejected', 'finished')),
+    trace_id          UUID,                                -- LangSmith run id of the run that paused at review
+    erp_quotation_id  TEXT,                                -- set when approved
+    reviewer          TEXT,                                -- who approved or rejected
+    created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS email_workflows_tenant_status_idx ON email_workflows (tenant_id, status);
+```
+
+What each status means:
+- `running`: the worker is running the graph.
+- `waiting_review`: paused at review.
+- `reviewing`: a reviewer's answer is being applied.
+- `approved` or `rejected`: the reviewer decided.
+- `finished`: the email ended without review (a label other than new_order).
+
+The model in `domain/workflow_run.py` is a frozen `WorkflowRun` with the same fields, plus a `Status` Literal and
+`thread_id_for(tenant_id, email_id) -> str`.
+
+The repository (`db/email_workflows.py`) has one function per need. Every query filters by `tenant_id`:
+- `start(conn, tenant_id, email_id) -> WorkflowRun`:
+  - `INSERT … ON CONFLICT (email_id) DO NOTHING` with status `running`, then `SELECT`;
+  - it returns the existing row when there is one, so a retried job sees what is already there.
+- `mark_waiting_review(conn, tenant_id, email_id, trace_id: UUID) -> None`.
+- `mark_finished(conn, tenant_id, email_id) -> None`.
+- `claim_for_review(conn, tenant_id, email_id) -> WorkflowRun | None`:
+  - `UPDATE … SET status='reviewing' WHERE … AND status='waiting_review' RETURNING …`;
+  - this is **atomic**: of two reviewers answering at once, only one gets the row; the other gets None.
+- `finish_review(conn, tenant_id, email_id, status: Literal["approved", "rejected", "waiting_review"],
+  reviewer: str, erp_quotation_id: str | None) -> None`.
+  - `waiting_review` means the answer was refused and the graph paused again.
+- `list_waiting_review(conn, tenant_id) -> list[WorkflowRun]`, oldest first.
+- `get(conn, tenant_id, email_id) -> WorkflowRun | None`.
+
+Every update also sets `updated_at = now()`.
+
+**Tests** (new `tests/integration/test_email_workflows.py`, marked `integration`; the conftest cleanup already
+deletes emails, which cascades):
+1. Calling `start` twice gives one row and the same `thread_id`.
+2. `claim_for_review` succeeds once. A second call returns None.
+3. `list_waiting_review` returns only this tenant's `waiting_review` rows: an `OTHER_TEST_TENANT` row is not listed.
+4. `tests/integration/test_migrate.py` still passes, so 0005 applies on top of 0004.
+
+---
+
+## Task 3: the Postgres checkpointer
+
+**Files:**
+- new `src/orderdesk/db/checkpointer.py`
+- `scripts/migrate.py`
+- `pyproject.toml`
+
+1. Install `langgraph-checkpoint-postgres` into the venv and add it to `pyproject.toml` `dependencies`. Write down
+   the installed version in the report.
+2. `db/checkpointer.py`:
+   - `open_checkpointer(database_url: str) -> PostgresSaver` opens its **own** connection, with
+     `psycopg.connect(database_url, autocommit=True, prepare_threshold=0, row_factory=dict_row)`. PostgresSaver
+     needs `dict_row`, which our `connect()` doesn't set, so don't reuse it.
+   - `setup_checkpointer(database_url: str) -> None` calls `saver.setup()`. It is idempotent and creates the
+     LangGraph tables.
+   - Read the `langgraph-checkpoint-postgres` docs for the exact constructor.
+3. `scripts/migrate.py`: after our own migrations, call `setup_checkpointer(...)`. Every schema change then goes
+   through one command.
+
+**Test** (integration): save and load a checkpoint round-trip with the real graph. Build a graph with `FakeLLM`s
+and a `MemoryCatalogue` that pauses at review, with `open_checkpointer`. Then build a **second** graph object with a
+**new** checkpointer connection, which acts like the other process, and resume it with `Command(resume={"action":
+"approve", …})` on the same `thread_id`. Assert that `approved_order` is set and the draft survived intact:
+`DraftOrder` equality, including dates and floats. This test proves the hand-over between the worker and the
+reviewer.
+
+---
+
+## Task 4: the worker runs the graph
+
+**Files:**
+- `src/orderdesk/jobs/worker.py`
+- `scripts/run_workers.py`
+
+1. `worker.py`: add `make_process_email(graph: CompiledStateGraph) -> Handler`. The handler does this:
+   ```python
+   run = email_workflows.start(conn, job.tenant_id, job.email_id)
+   if run.status != "running":
+       return                         # already paused, reviewed or finished: a re-delivered job changes nothing
+   email = load_email_context(conn, job.tenant_id, job.email_id)
+   run_id = uuid4()
+   config = {"configurable": {"thread_id": run.thread_id}, "run_id": run_id, "run_name": "orderdesk_workflow",
+             "metadata": {"tenant_id": job.tenant_id, "email_id": job.email_id}}
+   result = graph.invoke(WorkflowState(email=email), config)
+   if "__interrupt__" in result:  mark_waiting_review(conn, ..., trace_id=run_id)
+   else:                          mark_finished(conn, ...)
+   ```
+   - Any exception propagates. `run_one` already turns it into `mark_failed`, with a backoff retry.
+   - A retried job finds status `running` and runs the graph again from the start with the same input. That's
+     simple and correct: nothing was written, since writing only happens after review. Write a comment saying so.
+2. `run_forever(...)` gets a `handlers: dict[str, Handler] = HANDLERS` parameter, like `run_one` and
+   `run_until_empty` already have.
+3. **Keep** the existing logging-only `process_email` and `HANDLERS`: the job tests use them. The production
+   handler is passed in by the script.
+4. `scripts/run_workers.py`, at start and once:
+   ```python
+   storage = LocalStorage(settings.storage_dir)
+   checkpointer = open_checkpointer(settings.database_url)
+   graph = build_app_graph(storage, make_demo_catalogue(), checkpointer)
+   handlers = {**HANDLERS, PROCESS_EMAIL: make_process_email(graph)}
+   ```
+   Pass `handlers` to `run_forever` and `run_until_empty`. Load `.env` the way `load_settings` already does.
+
+**Tests** (integration, in `tests/integration/test_worker_graph.py`). Use a graph built by `build_graph` with fakes
+and `open_checkpointer`. Never `build_app_graph`, which builds real LLM clients.
+1. Ingest a fixture email, then run `run_until_empty` with the graph handler:
+   - an email classified `new_order` ends with `email_workflows.status == "waiting_review"` and a `trace_id`;
+   - the job is `done`.
+2. An email classified `other` ends `finished`, with no trace id needed.
+3. **A re-delivered job:** enqueue the same email again after it's waiting for review, and run it. The FakeLLMs are
+   **not called again**, and the status stays `waiting_review`.
+4. A graph that raises gives a `failed` or retried job, and the status stays `running`.
+
+The sender of the fixture emails must be a known customer of the test catalogue, so that the line resolves. Build
+the test `MemoryCatalogue` with that sender's address. Read it from the fixture, and **don't print it** in test
+output or logs.
+
+---
+
+## Task 5: the review service and the review CLI
+
+**Files:**
+- new `src/orderdesk/services/__init__.py`
+- new `src/orderdesk/services/review.py`
+- new `scripts/review.py`
+
+### Service (`services/review.py`): the API will reuse it in phase 3
+
+```python
+class ReviewResult(BaseModel):          # frozen
+    outcome: Literal["approved", "rejected", "asked_again", "not_waiting"]
+    errors: list[str] = []              # with asked_again: why the answer was refused
+    erp_quotation_id: str | None = None
+
+def pending_draft(graph, conn, tenant_id: int, email_id: int) -> tuple[DraftOrder, list[str]] | None:
+    """The draft and the errors of the last refused answer, read from the checkpoint; None if not waiting."""
+
+def submit_review(graph, conn, tenant_id: int, email_id: int, decision: dict) -> ReviewResult:
+    run = email_workflows.claim_for_review(conn, tenant_id, email_id)
+    if run is None: return ReviewResult(outcome="not_waiting")
+    result = graph.invoke(Command(resume=decision), {"configurable": {"thread_id": run.thread_id}})
+    if "__interrupt__" in result:   finish_review(..., "waiting_review", ...)  -> asked_again + its errors
+    elif approved_order is set:     finish_review(..., "approved", reviewer, erp_quotation_id) -> approved
+    else:                           finish_review(..., "rejected", reviewer, None) -> rejected
+```
+
+- If `graph.invoke` raises, put the status back to `waiting_review` (use try/except, then **re-raise**). A crash
+  must never leave an email stuck in `reviewing`.
+- `pending_draft` reads `graph.get_state(config)`: the interrupt's value holds `{"draft": …, "errors": …}`. It
+  returns None when the run isn't `waiting_review`.
+- `decision` stays a plain dict: the review node validates it, which batch 1 built. Don't validate it twice.
+- The reviewer name for `finish_review` comes from `decision.get("reviewer")`. When the shape is invalid it may be
+  missing, and that is fine for `asked_again`.
+
+### CLI (`scripts/review.py`): thin, with no logic beyond parsing and printing
+
+```
+python scripts/review.py list                                   # emails waiting for review (this TENANT_ID)
+python scripts/review.py show 42                                # the draft: lines, prices, issues, errors
+python scripts/review.py approve 42 --reviewer amine [--code 1=PF60376] [--qty 1=3] [--remove 2]
+python scripts/review.py reject 42 --reviewer amine [--comment "duplicate"]
+```
+
+- Put the parsing of `--code 1=PF60376`, `--qty 1=3` and `--remove 2` into a pure function,
+  `parse_changes(codes, qtys, removes) -> list[dict]`, so it can be tested. A bad value (`--qty 1=abc`, `--code
+  x=Y`) exits with a clear message. It never sends a half-built decision.
+- The script builds the graph once, with `build_app_graph(..., open_checkpointer(...))`. The resume runs
+  `write_draft` and `learn`, which need no LLM: the graph builds LLM clients but never calls them on resume.
+- `list` and `show` may print the subject and the line texts: it's a local terminal for the reviewer, never sent
+  anywhere.
+- Exit codes: 0 when approved, rejected or shown; 1 when asked again or not waiting; 2 for bad arguments.
+
+**Tests:**
+- Unit (new `tests/unit/test_review_cli.py`):
+  - `parse_changes` merges `--code 1=X` and `--qty 1=3` on the same line into one change;
+  - `--remove` gives `{"line_index": 2, "remove": True}`;
+  - bad values raise.
+  Import the function without running the CLI. Put `parse_changes` in `services/review.py` if that makes it easier
+  to import, and say so in the report.
+- Integration (add to `tests/integration/test_worker_graph.py`), with a graph made of fakes and the checkpointer:
+  1. the worker pauses an email, then `submit_review(approve)` gives `approved`, the row is `approved` with an
+     `erp_quotation_id`, and the job and checkpoint survive between two graph objects;
+  2. a reject gives `rejected` and no quotation id;
+  3. an approve while a line has no product gives `asked_again`, its errors, and the status back to
+     `waiting_review`; a second `submit_review` with `remove` gives `approved`;
+  4. `submit_review` on an email that isn't waiting gives `not_waiting`, and the graph is not invoked;
+  5. a graph whose resume raises puts the status back to `waiting_review`, and the error propagates.
 
 ---
 
 ## Acceptance criteria (the lead checks each one)
 
-- [ ] `venv\Scripts\python -m pytest tests/unit -q` passes: the 238 earlier tests (updated only where this file
-      says) plus the new ones.
-- [ ] `venv\Scripts\ruff check` is clean on every touched file, and the diff has **no reformatting of untouched
-      lines**.
-- [ ] `ErpPort`, `ProductSearch` and `AliasStore` are unchanged. The writes live only on `ErpWriter` and
-      `AliasWriter`, and those only reach `write_draft` and `learn`. A grep of `agents/` and `resolve/` finds
-      neither.
-- [ ] Nothing is written before an approve, and nothing at all after a reject.
-- [ ] The same email approved twice, or a retried node, gives one quotation.
-- [ ] Learning follows the §2.6 rules exactly (`named` only, no codes, no removed lines), and it uses the ladder's
-      own `alias_words`.
-- [ ] A conflict never leaves an automatic product: the same words approved with two different products are
-      forgotten, never overwritten.
-- [ ] Drafts never appear in `past_orders` or `get_order`.
-- [ ] `studio.py` changes only by the two new arguments. `run_e2e.py` changes only by the two new arguments.
+- [ ] `venv\Scripts\python -m pytest tests/unit -q` passes: the 260 earlier tests plus the new ones.
+- [ ] `venv\Scripts\python -m pytest tests/integration -q` passes **with the database up**: the 20 earlier tests
+      plus the new ones. No skips.
+- [ ] `scripts/migrate.py` applies 0005 and the LangGraph tables, and a second run changes nothing.
+- [ ] `ruff check` is clean on the touched files, with no reformatting of untouched lines.
+- [ ] Importing `orderdesk.workflow.app` loads no settings and builds nothing. `studio.py` keeps working.
+- [ ] The worker builds the graph and checkpointer once. A re-delivered job never re-runs an email that is past
+      `running`.
+- [ ] A review given in another process (a new graph object, a new connection) resumes the saved thread correctly.
+- [ ] Two reviewers answering at once: only one is applied. A crash during the resume never leaves `reviewing`.
+- [ ] No SQL outside `db/` repository modules. Every query filters by `tenant_id`.
+- [ ] No sender, subject or body in logs or LangSmith metadata.
 
 ## `.ai/IMPLEMENTATION_REPORT.md` format
 
@@ -271,19 +333,17 @@ The rules, from §2.6 and ADR 29:
 2. **Files:** each file created or changed, with one line on why.
 3. **Decisions:** every place where you chose something this file didn't specify, and why.
 4. **Deviations:** anything done differently from this file, and why. Write "none" if there are none.
-5. **Tests:** the exact commands run, and the pasted summary lines of the output (pass/fail counts).
+5. **Tests:** the exact commands run, and the pasted summary lines of the output (pass/fail/**skip** counts).
 6. **Open points:** anything unsure, unfinished or worth the lead's attention.
 
 ---
 
 ## Later batches (for context only, do not build)
 
-- **Batch 3:**
-  - the Postgres checkpointer, with `thread_id = "tenant-{id}:email-{id}"`;
-  - the worker runs the graph and marks the email `waiting_review` (migration `0005`);
-  - `scripts/review.py`, to list the emails waiting for review and approve, edit or reject one;
-  - saving the first run's trace id.
-- **Batch 4:**
-  - LangSmith feedback on that trace: "approved unchanged" or "corrected" per line, which gives the production
-    correction rate;
-  - corrected lines become new e2e eval cases.
+- **Batch 4:** drafts and synonyms in Postgres.
+  - `demo_quotations` (an `ErpWriter`);
+  - `product_synonyms` (an `AliasStore` and `AliasWriter`), recording which email each learn or forget came from,
+    so that re-running the same email changes nothing (the batch-2 open point);
+  - with these, `review.py` and the worker share what they write.
+- **Batch 5:** LangSmith feedback on the saved `trace_id`, "approved unchanged" or "corrected" per line, and
+  corrected lines become e2e eval cases.

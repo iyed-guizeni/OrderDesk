@@ -1,5 +1,8 @@
 """The graph wiring: classification routes to the right branch, and branch updates fit WorkflowState."""
 
+import importlib
+from unittest.mock import patch
+
 from langgraph.checkpoint.memory import InMemorySaver
 
 from orderdesk.catalogue.memory import MemoryCatalogue
@@ -94,3 +97,17 @@ def test_ambiguous_lines_go_through_the_llm_choice() -> None:
 
     assert len(choose_llm.calls) == 1
     assert result["resolved_order"].lines[0].method == "llm_choice"
+
+
+def test_importing_app_does_not_load_settings() -> None:
+    import orderdesk.workflow.app as app
+
+    # reload re-imports the names from the patched modules, so any call at import time hits a patch
+    with (
+        patch("orderdesk.config.load_settings", side_effect=AssertionError("settings loaded at import")),
+        patch("orderdesk.llm.client.make_fallback_llm", side_effect=AssertionError("LLM built at import")),
+        patch("orderdesk.llm.client.make_fallback_chat", side_effect=AssertionError("LLM built at import")),
+        patch("orderdesk.workflow.graph.build_graph", side_effect=AssertionError("graph built at import")),
+    ):
+        importlib.reload(app)
+    importlib.reload(app)  # restore the real names for the other tests

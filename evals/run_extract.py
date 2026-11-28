@@ -19,9 +19,9 @@ from orderdesk.domain.extraction import ExtractedLine, ExtractedOrder
 from orderdesk.llm.client import AllProvidersFailed, make_fallback_llm
 from orderdesk.profiles.ondyna import ONDYNA_PROFILE
 from orderdesk.prompts.extract_order_info import build_system_prompt
+from orderdesk.workflow.app import PROVIDER_CHAIN
 from orderdesk.workflow.new_order import make_extract_node
 from orderdesk.workflow.state import WorkflowState
-from orderdesk.workflow.studio import PROVIDER_CHAIN
 
 DATASET = Path(__file__).parent / "extract" / "ondyna.jsonl"
 RESULTS_DIR = Path(__file__).parent / "results" / "extract"
@@ -183,7 +183,9 @@ def score(expected: dict, order: ExtractedOrder) -> dict:
                     ok = _same(field, spec[field], got[field])
                     bucket.append((f"line.{field}", ok))
                     if not ok:
-                        problems.append(f"line {found.raw_text!r}: {field} expected {spec[field]!r}, got {got[field]!r}")
+                        problems.append(
+                            f"line {found.raw_text!r}: {field} expected {spec[field]!r}, got {got[field]!r}"
+                        )
 
     invented = [line.raw_text for line in unused]
     critical.append(("no_invented_line", not invented))
@@ -375,7 +377,10 @@ def _print_report(result: dict, rows: list[dict]) -> None:
     print(f"Perfect cases: {m['perfect']}/{m['scored']}   minor fields: {m['minor_fields_rate']:.0%}"
           f"   invented lines: {m['invented_lines']}   invalid answers: {m['invalid_answers']}"
           f"   API errors: {m['api_errors']}   mean time: {m['mean_seconds']}s")
-    print(f"Grounding: {m['grounding_flagged']} case(s) flagged, {m['grounding_false_alarms']} of them on right answers")
+    print(
+        f"Grounding: {m['grounding_flagged']} case(s) flagged, "
+        f"{m['grounding_false_alarms']} of them on right answers"
+    )
     for field, value in m["fields"].items():
         print(f"  {field:<20} {value}")
     for row in rows:

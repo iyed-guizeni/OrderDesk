@@ -35,7 +35,7 @@ from orderdesk.llm.client import AllProvidersFailed, make_fallback_chat
 from orderdesk.profiles.demo_catalogue import DEMO_CUSTOMERS, make_demo_catalogue
 from orderdesk.profiles.ondyna import ONDYNA_PROFILE
 from orderdesk.prompts.resolver_agent import build_system_prompt, build_user_prompt
-from orderdesk.workflow.studio import PROVIDER_CHAIN
+from orderdesk.workflow.app import PROVIDER_CHAIN
 
 CASES = Path(__file__).parent / "resolver" / "ondyna.jsonl"
 CATALOGUE = make_demo_catalogue()
@@ -136,7 +136,9 @@ def case_scores(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
 
 
 def experiment_summary(inputs: list[dict], outputs: list[dict], reference_outputs: list[dict]) -> dict:
-    summary = summarize([score_case(i, o, r, CATALOGUE) for i, o, r in zip(inputs, outputs, reference_outputs)])
+    summary = summarize(
+        [score_case(i, o, r, CATALOGUE) for i, o, r in zip(inputs, outputs, reference_outputs, strict=False)]
+    )
     return {"results": [
         {"key": key, "value": value} if isinstance(value, str) else {"key": key, "score": value}
         for key, value in summary.items() if value is not None
